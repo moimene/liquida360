@@ -8,13 +8,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAuth } from '../hooks/use-auth'
 import { supabase } from '@/lib/supabase'
 import { COUNTRIES } from '@/lib/countries'
+import { Building, Users } from 'lucide-react'
+
+type RegistrationMode = 'internal' | 'correspondent'
+
+const SELF_REGISTER_ROLES = [
+  { value: 'pagador', label: 'Pagador' },
+  { value: 'supervisor', label: 'Supervisor' },
+  { value: 'financiero', label: 'Financiero' },
+] as const
 
 export function RegisterPage() {
+  const [mode, setMode] = useState<RegistrationMode>('correspondent')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  // Correspondent fields
   const [firmName, setFirmName] = useState('')
   const [country, setCountry] = useState('')
   const [taxId, setTaxId] = useState('')
+  // Internal fields
+  const [fullName, setFullName] = useState('')
+  const [requestedRole, setRequestedRole] = useState('pagador')
+
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const signUp = useAuth((s) => s.signUp)
@@ -24,47 +39,70 @@ export function RegisterPage() {
     e.preventDefault()
     setError(null)
 
-    if (!firmName.trim() || !country || !taxId.trim()) {
-      setError('Todos los campos son obligatorios')
-      return
-    }
-
     if (password.length < 6) {
       setError('La contrasena debe tener al menos 6 caracteres')
       return
     }
 
-    setLoading(true)
-
-    // 1. Sign up the user (no role yet - pending approval)
-    const { data, error: signUpError } = await signUp(email, password)
-
-    if (signUpError || !data?.user) {
-      setLoading(false)
-      setError(signUpError ?? 'Error al crear la cuenta')
-      return
+    if (mode === 'correspondent') {
+      if (!firmName.trim() || !country || !taxId.trim()) {
+        setError('Todos los campos son obligatorios')
+        return
+      }
+    } else {
+      if (!fullName.trim()) {
+        setError('El nombre completo es obligatorio')
+        return
+      }
     }
 
-    // 2. Create correspondent record with pending_approval status
-    const { error: insertError } = await supabase.from('correspondents').insert({
-      name: firmName.trim(),
-      country,
-      tax_id: taxId.trim(),
-      address: '',
-      email,
-      status: 'pending_approval',
-      user_id: data.user.id,
-    })
+    setLoading(true)
 
-    setLoading(false)
+    if (mode === 'correspondent') {
+      // Correspondent registration flow
+      const { data, error: signUpError } = await signUp(email, password)
 
-    if (insertError) {
-      setError(`Cuenta creada pero error al registrar datos: ${insertError.message}`)
-      return
+      if (signUpError || !data?.user) {
+        setLoading(false)
+        setError(signUpError ?? 'Error al crear la cuenta')
+        return
+      }
+
+      const { error: insertError } = await supabase.from('correspondents').insert({
+        name: firmName.trim(),
+        country,
+        tax_id: taxId.trim(),
+        address: '',
+        email,
+        status: 'pending_approval',
+        user_id: data.user.id,
+      })
+
+      setLoading(false)
+
+      if (insertError) {
+        setError(`Cuenta creada pero error al registrar datos: ${insertError.message}`)
+        return
+      }
+    } else {
+      // Internal user registration flow
+      const { error: signUpError } = await signUp(email, password, {
+        full_name: fullName.trim(),
+        requested_role: requestedRole,
+      })
+
+      setLoading(false)
+
+      if (signUpError) {
+        setError(signUpError)
+        return
+      }
     }
 
     navigate('/pending')
   }
+
+  const isCorrespondent = mode === 'correspondent'
 
   return (
     <div
@@ -83,60 +121,153 @@ export function RegisterPage() {
             className="mt-2"
             style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}
           >
-            Portal de corresponsales
+            Registro de usuario
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Registro de corresponsal</CardTitle>
+            <CardTitle>Crear cuenta</CardTitle>
             <CardDescription>
-              Completa tus datos para solicitar acceso al portal. Un administrador revisara tu
-              solicitud.
+              {isCorrespondent
+                ? 'Completa tus datos para solicitar acceso al portal de corresponsales.'
+                : 'Registrate como miembro del equipo interno. Un administrador revisara tu solicitud.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Registration mode selector */}
+            <div
+              className="grid grid-cols-2 gap-1 p-1 mb-5"
+              style={{
+                backgroundColor: 'var(--g-surface-secondary)',
+                borderRadius: 'var(--g-radius-md)',
+              }}
+              role="tablist"
+              aria-label="Tipo de registro"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={!isCorrespondent}
+                onClick={() => {
+                  setMode('internal')
+                  setError(null)
+                }}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all"
+                style={{
+                  borderRadius: 'var(--g-radius-sm)',
+                  backgroundColor: !isCorrespondent ? 'var(--g-surface-primary)' : 'transparent',
+                  color: !isCorrespondent ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
+                  boxShadow: !isCorrespondent ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                }}
+              >
+                <Users className="h-4 w-4" />
+                Equipo interno
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={isCorrespondent}
+                onClick={() => {
+                  setMode('correspondent')
+                  setError(null)
+                }}
+                className="flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all"
+                style={{
+                  borderRadius: 'var(--g-radius-sm)',
+                  backgroundColor: isCorrespondent ? 'var(--g-surface-primary)' : 'transparent',
+                  color: isCorrespondent ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
+                  boxShadow: isCorrespondent ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                }}
+              >
+                <Building className="h-4 w-4" />
+                Corresponsal
+              </button>
+            </div>
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="firmName">Nombre del despacho</Label>
-                <Input
-                  id="firmName"
-                  type="text"
-                  value={firmName}
-                  onChange={(e) => setFirmName(e.target.value)}
-                  placeholder="Despacho Juridico Ejemplo S.L."
-                  required
-                />
-              </div>
+              {isCorrespondent ? (
+                <>
+                  {/* Correspondent-specific fields */}
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="firmName">Nombre del despacho</Label>
+                    <Input
+                      id="firmName"
+                      type="text"
+                      value={firmName}
+                      onChange={(e) => setFirmName(e.target.value)}
+                      placeholder="Despacho Juridico Ejemplo S.L."
+                      required
+                    />
+                  </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="country">Pais</Label>
-                <Select
-                  id="country"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  required
-                >
-                  <option value="">Selecciona un pais</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="country">Pais</Label>
+                    <Select
+                      id="country"
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      required
+                    >
+                      <option value="">Selecciona un pais</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="taxId">NIF / Tax ID</Label>
-                <Input
-                  id="taxId"
-                  type="text"
-                  value={taxId}
-                  onChange={(e) => setTaxId(e.target.value)}
-                  placeholder="B12345678"
-                  required
-                />
-              </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="taxId">NIF / Tax ID</Label>
+                    <Input
+                      id="taxId"
+                      type="text"
+                      value={taxId}
+                      onChange={(e) => setTaxId(e.target.value)}
+                      placeholder="B12345678"
+                      required
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Internal user fields */}
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="fullName">Nombre completo</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Juan Garcia Lopez"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="requestedRole">Rol solicitado</Label>
+                    <Select
+                      id="requestedRole"
+                      value={requestedRole}
+                      onChange={(e) => setRequestedRole(e.target.value)}
+                      required
+                    >
+                      {SELF_REGISTER_ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </Select>
+                    <p
+                      className="text-xs"
+                      style={{ color: 'var(--g-text-secondary)' }}
+                    >
+                      Un administrador asignara tu rol final al aprobar tu cuenta.
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div className="border-t my-2" style={{ borderColor: 'var(--g-border-default)' }} />
 
@@ -147,7 +278,7 @@ export function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="contacto@despacho.com"
+                  placeholder={isCorrespondent ? 'contacto@despacho.com' : 'usuario@empresa.com'}
                   required
                   autoComplete="email"
                 />

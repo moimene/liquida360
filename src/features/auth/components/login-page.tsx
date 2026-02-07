@@ -203,20 +203,18 @@ export function LoginPage() {
               </Button>
             </form>
 
-            {isPortal && (
-              <div className="mt-4 text-center">
-                <p className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-                  ¿Aun no tienes cuenta?{' '}
-                  <Link
-                    to="/register"
-                    className="font-medium underline"
-                    style={{ color: 'var(--g-brand-3308)' }}
-                  >
-                    Registrate aqui
-                  </Link>
-                </p>
-              </div>
-            )}
+            <div className="mt-4 text-center">
+              <p className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+                ¿Aun no tienes cuenta?{' '}
+                <Link
+                  to="/register"
+                  className="font-medium underline"
+                  style={{ color: 'var(--g-brand-3308)' }}
+                >
+                  Registrate aqui
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

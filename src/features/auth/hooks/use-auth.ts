@@ -13,6 +13,7 @@ interface AuthState {
   signUp: (
     email: string,
     password: string,
+    metadata?: Record<string, string>,
   ) => Promise<{ data: { user: User | null } | null; error: string | null }>
   signOut: () => Promise<void>
   initialize: () => Promise<void>
@@ -63,12 +64,13 @@ export const useAuth = create<AuthState>((set) => ({
     return { error: null }
   },
 
-  signUp: async (email, password) => {
+  signUp: async (email, password, metadata) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: metadata,
       },
     })
     if (error) return { data: null, error: error.message }

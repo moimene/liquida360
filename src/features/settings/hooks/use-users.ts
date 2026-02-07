@@ -6,6 +6,8 @@ export interface InternalUser {
   email: string
   role: string | null
   correspondent_id: string | null
+  requested_role: string | null
+  full_name: string | null
   created_at: string
 }
 
@@ -18,8 +20,9 @@ interface UsersState {
   inviteUser: (
     email: string,
     role: string,
-  ) => Promise<{ error: string | null; magicLink?: string | null }>
+  ) => Promise<{ error: string | null; magicLink?: string | null; emailSent?: boolean }>
   updateRole: (userId: string, role: string) => Promise<{ error: string | null }>
+  approveUser: (userId: string, role: string) => Promise<{ error: string | null }>
 }
 
 export const useUsers = create<UsersState>((set, get) => ({
@@ -57,7 +60,11 @@ export const useUsers = create<UsersState>((set, get) => ({
 
     // Re-fetch user list to include the new user
     await get().fetchUsers()
-    return { error: null, magicLink: data?.magicLink ?? null }
+    return {
+      error: null,
+      magicLink: data?.magicLink ?? null,
+      emailSent: data?.emailSent ?? false,
+    }
   },
 
   updateRole: async (userId, role) => {
@@ -79,6 +86,19 @@ export const useUsers = create<UsersState>((set, get) => ({
       return { error: error?.message ?? data?.error ?? 'Error desconocido' }
     }
 
+    return { error: null }
+  },
+
+  approveUser: async (userId, role) => {
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+      body: { action: 'approve_user', userId, role },
+    })
+
+    if (error) return { error: error.message }
+    if (data?.error) return { error: data.error }
+
+    // Re-fetch user list to reflect the change
+    await get().fetchUsers()
     return { error: null }
   },
 }))
