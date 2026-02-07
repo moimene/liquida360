@@ -1,0 +1,123 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Montserrat font */
+@import '@fontsource/montserrat/400.css';
+@import '@fontsource/montserrat/500.css';
+@import '@fontsource/montserrat/700.css';
+
+/* Base styles - Garrigues Design System */
+body {
+  font-family: var(--g-font-family);
+  font-size: var(--g-text-body);
+  line-height: 1.5;
+  color: var(--g-text-primary);
+  background-color: var(--g-surface-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: var(--g-font-weight-bold);
+  color: var(--g-text-primary);
+}
+
+a {
+  color: var(--g-link);
+  text-decoration: none;
+  transition: color var(--g-transition-fast);
+}
+
+a:hover {
+  color: var(--g-link-hover);
+}
+
+/* Focus visible - WCAG AA mandatory */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--g-surface-card),
+    0 0 0 4px var(--g-brand-3308);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+.animate-slide-in {
+  animation: slide-in-right 0.3s ease-out;
+}
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--g-surface-muted) 25%,
+    var(--g-surface-subtle) 50%,
+    var(--g-surface-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
