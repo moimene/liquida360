@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -12,6 +12,7 @@ import {
   Check,
   X,
   Download,
+  Link2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +25,8 @@ import { useLiquidations } from '../hooks/use-liquidations'
 import { usePaymentRequests } from '@/features/payments/hooks/use-payment-requests'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { getStatusConfig, formatAmount, STATUS_TIMELINE } from '@/lib/liquidation-utils'
-import { formatDate } from '@/lib/certificate-utils'
+import { formatDate, getCertificateStatus } from '@/lib/certificate-utils'
+import { supabase } from '@/lib/supabase'
 import { COUNTRIES } from '@/lib/countries'
 import type { Liquidation } from '@/types'
 
@@ -33,11 +35,13 @@ export function LiquidationDetailPage() {
   const navigate = useNavigate()
   const user = useAuth((s) => s.user)
   const role = useAuth((s) => s.role)
-  const { liquidations, loading, fetchLiquidations, submitForApproval, approve, reject } =
+  const { liquidations, loading, fetchLiquidations, submitForApproval, approve, reject, linkCertificate } =
     useLiquidations()
 
   const { createRequest } = usePaymentRequests()
   const [actionLoading, setActionLoading] = useState(false)
+  const [linkingCertificate, setLinkingCertificate] = useState(false)
+  const certificateCheckDone = useRef(false)
 
   const liquidation = useMemo(() => liquidations.find((l) => l.id === id), [liquidations, id]) as
     | (Liquidation & { correspondents?: { name: string; country: string } })
@@ -48,6 +52,71 @@ export function LiquidationDetailPage() {
       fetchLiquidations()
     }
   }, [liquidations.length, fetchLiquidations])
+
+  // Reset certificate check when navigating to a different liquidation
+  useEffect(() => {
+    certificateCheckDone.current = false
+  }, [id])
+
+  // Auto-detect and link valid certificate for the correspondent when liquidation has no certificate_id
+  // This subscribes to external state (Supabase) and updates local state accordingly
+  useEffect(() => {
+    if (
+      !liquidation ||
+      liquidation.certificate_id ||
+      !liquidation.correspondent_id ||
+      certificateCheckDone.current
+    ) {
+      return
+    }
+
+    let cancelled = false
+    certificateCheckDone.current = true
+
+    async function checkAndLink() {
+      // Query valid certificates for this correspondent
+      const { data: certificates } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('correspondent_id', liquidation!.correspondent_id)
+        .order('expiry_date', { ascending: false })
+
+      if (cancelled || !certificates || certificates.length === 0) return
+
+      // Find a valid (not expired) certificate
+      const validCert = certificates.find((cert) => {
+        const statusInfo = getCertificateStatus(cert.expiry_date)
+        return statusInfo.status === 'valid' || statusInfo.status === 'expiring_soon'
+      })
+
+      if (!validCert || cancelled) return
+
+      // Auto-link if the liquidation is in a state that needs it
+      const linkableStatuses = ['approved', 'pending_approval', 'draft']
+      if (linkableStatuses.includes(liquidation!.status)) {
+        setLinkingCertificate(true)
+        const { error } = await linkCertificate(liquidation!.id, validCert.id)
+
+        if (cancelled) return
+
+        setLinkingCertificate(false)
+
+        if (error) {
+          toast.error('Error al vincular certificado', { description: error })
+        } else {
+          toast.success('Certificado vigente vinculado automáticamente a la liquidación')
+          fetchLiquidations()
+        }
+      }
+    }
+
+    checkAndLink()
+
+    return () => {
+      cancelled = true
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liquidation?.id, liquidation?.certificate_id, liquidation?.correspondent_id, liquidation?.status])
 
   const statusConfig = liquidation ? getStatusConfig(liquidation.status) : null
 
@@ -296,7 +365,12 @@ export function LiquidationDetailPage() {
                   Certificado
                 </dt>
                 <dd>
-                  {liquidation.certificate_id ? (
+                  {linkingCertificate ? (
+                    <Badge variant="outline">
+                      <Link2 className="h-3 w-3 mr-1 animate-spin" />
+                      Vinculando...
+                    </Badge>
+                  ) : liquidation.certificate_id ? (
                     <Badge variant="success">Vigente</Badge>
                   ) : (
                     <Badge variant="destructive">Sin certificado</Badge>
@@ -325,7 +399,7 @@ export function LiquidationDetailPage() {
             <InfoPanel variant="info" className="mt-6">
               {liquidation.status === 'draft' && 'Envía la liquidación para aprobación cuando esté lista.'}
               {liquidation.status === 'pending_approval' && 'Pendiente de que un supervisor apruebe o rechace la liquidación.'}
-              {liquidation.status === 'approved' && (liquidation.certificate_id ? 'Liquidación aprobada. Puedes solicitar el pago al departamento financiero.' : 'Liquidación aprobada. Se necesita un certificado vigente para solicitar el pago.')}
+              {liquidation.status === 'approved' && (linkingCertificate ? 'Vinculando certificado vigente encontrado para este corresponsal...' : liquidation.certificate_id ? 'Liquidación aprobada. Puedes solicitar el pago al departamento financiero.' : 'Liquidación aprobada. Se necesita un certificado vigente para solicitar el pago. Si subes un certificado para este corresponsal, se vinculará automáticamente.')}
               {liquidation.status === 'payment_requested' && 'Solicitud de pago enviada al departamento financiero. Esperando procesamiento.'}
               {liquidation.status === 'paid' && 'Pago completado. La liquidación está cerrada.'}
               {liquidation.status === 'rejected' && 'La liquidación ha sido rechazada. Puedes crear una nueva desde el listado.'}

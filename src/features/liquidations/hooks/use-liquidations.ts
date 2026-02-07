@@ -15,6 +15,10 @@ interface LiquidationsState {
     userId: string,
     certificateId?: string,
   ) => Promise<{ data: Liquidation | null; error: string | null }>
+  linkCertificate: (
+    liquidationId: string,
+    certificateId: string,
+  ) => Promise<{ error: string | null }>
   submitForApproval: (id: string) => Promise<{ error: string | null }>
   approve: (id: string, userId: string) => Promise<{ error: string | null }>
   reject: (id: string) => Promise<{ error: string | null }>
@@ -74,6 +78,22 @@ export const useLiquidations = create<LiquidationsState>((set, get) => ({
 
     set({ liquidations: [data, ...get().liquidations] })
     return { data, error: null }
+  },
+
+  linkCertificate: async (liquidationId, certificateId) => {
+    const { error } = await supabase
+      .from('liquidations')
+      .update({ certificate_id: certificateId })
+      .eq('id', liquidationId)
+
+    if (error) return { error: error.message }
+
+    set({
+      liquidations: get().liquidations.map((l) =>
+        l.id === liquidationId ? { ...l, certificate_id: certificateId } : l,
+      ),
+    })
+    return { error: null }
   },
 
   submitForApproval: async (id) => {
