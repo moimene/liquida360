@@ -97,13 +97,14 @@ export function LiquidationDetailPage() {
         setLinkingCertificate(true)
         const { error } = await linkCertificate(liquidation!.id, validCert.id)
 
-        if (cancelled) return
-
+        // Always clear the linking state — the DB operation already completed,
+        // so we must reset the UI regardless of whether the effect was cancelled
+        // (which happens when Zustand set() triggers a re-render during the await)
         setLinkingCertificate(false)
 
         if (error) {
           toast.error('Error al vincular certificado', { description: error })
-        } else {
+        } else if (!cancelled) {
           toast.success('Certificado vigente vinculado automáticamente a la liquidación')
           fetchLiquidations()
         }

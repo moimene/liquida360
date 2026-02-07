@@ -81,12 +81,18 @@ export const useLiquidations = create<LiquidationsState>((set, get) => ({
   },
 
   linkCertificate: async (liquidationId, certificateId) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('liquidations')
       .update({ certificate_id: certificateId })
       .eq('id', liquidationId)
+      .select('id')
 
     if (error) return { error: error.message }
+
+    // If RLS blocked the update, no rows are returned
+    if (!data || data.length === 0) {
+      return { error: 'No se pudo vincular el certificado. Permisos insuficientes.' }
+    }
 
     set({
       liquidations: get().liquidations.map((l) =>
