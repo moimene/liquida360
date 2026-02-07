@@ -13,7 +13,6 @@ import {
 } from '@/features/auth'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { SuspenseLoader } from '@/components/suspense-loader'
-import { Settings } from 'lucide-react'
 
 // Lazy-loaded internal route pages (code splitting)
 const DashboardPage = lazy(() =>
@@ -61,8 +60,10 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 )
-const PlaceholderPage = lazy(() =>
-  import('@/components/placeholder-page').then((m) => ({ default: m.PlaceholderPage })),
+const SettingsPage = lazy(() =>
+  import('@/features/settings/components/settings-page').then((m) => ({
+    default: m.SettingsPage,
+  })),
 )
 
 // Lazy-loaded portal route pages (code splitting)
@@ -166,11 +167,7 @@ function App() {
                 path="settings"
                 element={
                   <ProtectedRoute allowedRoles={['admin']}>
-                    <PlaceholderPage
-                      title="Configuracion"
-                      description="Configuracion del sistema, alertas y usuarios."
-                      icon={Settings}
-                    />
+                    <SettingsPage />
                   </ProtectedRoute>
                 }
               />

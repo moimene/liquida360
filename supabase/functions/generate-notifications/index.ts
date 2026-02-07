@@ -10,8 +10,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const FIRST_ALERT_DAYS = 90
-const SECOND_ALERT_DAYS = 30
+// Alert thresholds are read dynamically from alert_configs table
+const DEFAULT_ALERT_DAYS = [90, 30]
 
 interface NotificationPayload {
   type: 'certificate_check' | 'liquidation_status' | 'payment_status'
@@ -49,6 +49,16 @@ Deno.serve(async (req) => {
     if (payload.type === 'certificate_check') {
       const today = new Date()
 
+      // Read alert thresholds from alert_configs (dynamic)
+      const { data: alertConfigs } = await supabase
+        .from('alert_configs')
+        .select('days_before_expiry')
+        .eq('enabled', true)
+
+      const alertDays: number[] = alertConfigs?.length
+        ? alertConfigs.map((c: { days_before_expiry: number }) => c.days_before_expiry)
+        : DEFAULT_ALERT_DAYS
+
       const { data: certificates, error } = await supabase
         .from('certificates')
         .select('id, correspondent_id, expiry_date, issuing_country, correspondents(name)')
@@ -76,8 +86,8 @@ Deno.serve(async (req) => {
         const corrName =
           (cert as unknown as { correspondents: { name: string } }).correspondents?.name ?? '—'
 
-        // Notify at exact threshold days
-        if (daysRemaining === FIRST_ALERT_DAYS || daysRemaining === SECOND_ALERT_DAYS) {
+        // Notify at configured threshold days
+        if (alertDays.includes(daysRemaining)) {
           for (const userId of notifyUserIds) {
             notifications.push({
               user_id: userId,

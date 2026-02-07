@@ -7,8 +7,8 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const FIRST_ALERT_DAYS = 90
-const SECOND_ALERT_DAYS = 30
+// Alert thresholds are read from alert_configs table (fallback: 90 days)
+const DEFAULT_ALERT_DAYS = 90
 
 interface Certificate {
   id: string
@@ -40,6 +40,17 @@ Deno.serve(async (req) => {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
+    // Read alert thresholds from alert_configs (dynamic)
+    const { data: alertConfigs } = await supabase
+      .from('alert_configs')
+      .select('days_before_expiry')
+      .eq('enabled', true)
+      .order('days_before_expiry', { ascending: false })
+
+    const maxAlertDays = alertConfigs?.length
+      ? Math.max(...alertConfigs.map((c: { days_before_expiry: number }) => c.days_before_expiry))
+      : DEFAULT_ALERT_DAYS
+
     // Fetch all certificates that aren't already marked as expired
     const { data: certificates, error: certError } = await supabase
       .from('certificates')
@@ -65,7 +76,7 @@ Deno.serve(async (req) => {
         updatedExpired++
       } else if (
         daysRemaining >= 0 &&
-        daysRemaining <= FIRST_ALERT_DAYS &&
+        daysRemaining <= maxAlertDays &&
         cert.status === 'valid'
       ) {
         newStatus = 'expiring_soon'

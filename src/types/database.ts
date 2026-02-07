@@ -249,6 +249,35 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          id: string
+          table_name: string
+          record_id: string
+          action: 'INSERT' | 'UPDATE' | 'DELETE'
+          old_data: Record<string, unknown> | null
+          new_data: Record<string, unknown> | null
+          user_id: string | null
+          created_at: string
+        }
+        Insert: {
+          table_name: string
+          record_id: string
+          action: 'INSERT' | 'UPDATE' | 'DELETE'
+          old_data?: Record<string, unknown> | null
+          new_data?: Record<string, unknown> | null
+          user_id?: string | null
+        }
+        Update: {
+          table_name?: string
+          record_id?: string
+          action?: 'INSERT' | 'UPDATE' | 'DELETE'
+          old_data?: Record<string, unknown> | null
+          new_data?: Record<string, unknown> | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {}
     Functions: {}
