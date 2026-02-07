@@ -107,9 +107,318 @@ supabase/
 
 | Ruta | Pagina |
 |------|--------|
-| `/login` | Inicio de sesion |
+| `/login` | Inicio de sesion (selector Interno / Corresponsal) |
 | `/register` | Auto-registro de corresponsales |
 | `/pending` | Registro pendiente de aprobacion |
+
+---
+
+## Descripcion de pantallas
+
+### Pantallas publicas
+
+#### Login (`/login`)
+
+Pantalla de inicio de sesion con **selector de tipo de acceso** (tabs):
+- **Interno**: Para pagador, supervisor, financiero y admin. Placeholder "usuario@empresa.com".
+- **Corresponsal**: Para despachos externos. Placeholder "email@despacho.com". Muestra link a registro.
+
+Tras hacer login, valida que el rol del usuario coincida con el modo seleccionado. Si un corresponsal intenta entrar por "Interno" (o viceversa), se muestra un error descriptivo y se cierra la sesion.
+
+#### Registro (`/register`)
+
+Formulario para que despachos corresponsales se auto-registren:
+- Campos: nombre del despacho, pais (dropdown ~190 paises), NIF/Tax ID, email, contrasena
+- Al enviar: crea usuario + corresponsal con estado `pending_approval`
+- Redirige a la pantalla de aprobacion pendiente
+
+#### Aprobacion pendiente (`/pending`)
+
+Pantalla de espera con icono de reloj, texto informativo y el email del usuario registrado. Unica accion: cerrar sesion. El usuario sera redirigido automaticamente al portal cuando un admin apruebe su registro.
+
+---
+
+### App interna
+
+#### Dashboard (`/`)
+
+Panel principal con 4 tarjetas KPI:
+- **Liquidaciones pendientes**: Total en estados intermedios (amarillo si > 0)
+- **Certificados vigentes**: Total activos (verde)
+- **Certificados por vencer**: Vencidos + proximos a vencer (rojo si > 0)
+- **KPI contextual por rol**:
+  - Financiero/Admin: "Pagos pendientes" en cola
+  - Pagador/Supervisor: "En aprobacion/pago"
+
+Debajo, dos paneles:
+- **Liquidaciones recientes** (2/3): Lista de las 5 ultimas con corresponsal, fecha, estado y monto. Clic navega al detalle.
+- **Alertas de certificados** (1/3): Si hay certificados vencidos o proximos a vencer, muestra alertas con colores rojo/amarillo y link a gestion.
+
+#### Corresponsales — Lista (`/correspondents`)
+
+Tabla con buscador y paginacion. Columnas: nombre, pais, NIF, email, estado (badge color), acciones. Boton "Nuevo corresponsal" abre un dialog modal con formulario completo (nombre, pais, NIF, direccion, email, telefono).
+
+#### Corresponsales — Detalle (`/correspondents/:id`)
+
+Cabecera con nombre, badge de estado y badge de vinculacion al portal. Tres pestanas:
+- **Datos**: Ficha readonly con todos los campos del corresponsal
+- **Certificados**: Lista de certificados de residencia fiscal con fechas y estados
+- **Pagos**: Historico de liquidaciones asociadas
+
+Acciones contextuales (solo admin):
+- **Aprobar**: Si el corresponsal esta en `pending_approval`
+- **Invitar al portal**: Si el corresponsal no tiene usuario vinculado. Solicita email y envia invitacion.
+- **Editar**: Abre dialog de edicion de datos
+
+#### Certificados (`/certificates`)
+
+Panel de alertas en la parte superior (rojo: vencidos, amarillo: por vencer). Tabla con columnas: corresponsal, pais emisor, fecha vencimiento, estado (badge). Boton "Nuevo certificado" abre un wizard:
+1. Seleccionar corresponsal (dropdown)
+2. Pais emisor (dropdown)
+3. Fecha de emision (datepicker)
+4. Fecha de vencimiento (auto-calculada a 1 ano, editable)
+5. Subir documento (PDF/JPG/PNG, opcional)
+
+#### Liquidaciones — Lista (`/liquidations`)
+
+Tabla con columnas: corresponsal, concepto, importe, divisa, estado, fecha. Boton "Nueva liquidacion" abre un wizard de 3 pasos:
+
+**Paso 1 — Corresponsal**: Dropdown de corresponsales activos. Al seleccionar, muestra tarjeta con estado del certificado (vigente con dias restantes, vencido, o sin certificado).
+
+**Paso 2 — Datos**: Campos de importe, divisa (10 monedas: EUR, USD, GBP, CHF, BRL, MXN, CLP, COP, PEN, ARS), concepto (textarea) y referencia (opcional).
+
+**Paso 3 — Confirmacion**: Resumen visual con todos los datos. Si no hay certificado vigente, muestra advertencia amarilla indicando que se creara como borrador pero no se podra solicitar pago hasta tener certificado.
+
+#### Liquidaciones — Detalle (`/liquidations/:id`)
+
+Cabecera con importe formateado, badge de estado, nombre del corresponsal. **Timeline visual de 5 pasos**: Borrador → Pendiente aprobacion → Aprobada → Pago solicitado → Pagada. Circulos numerados con lineas conectoras. Si rechazada, muestra X roja.
+
+Botones de accion segun rol y estado:
+- Borrador + Pagador/Admin → "Enviar a aprobacion"
+- Pendiente + Supervisor/Admin → "Aprobar" / "Rechazar"
+- Aprobada + certificado vigente → "Solicitar pago"
+
+Dos tarjetas de detalle: datos de la liquidacion (izquierda) e informacion de procesamiento con textos guia contextuales (derecha).
+
+#### Pagos — Cola (`/payments`)
+
+Accesible solo para financiero y admin. Cuatro tarjetas de estadisticas: pendientes, en proceso, pagadas, rechazadas. Tabla de solicitudes de pago con columnas: corresponsal, liquidacion, importe, estado, fecha solicitud, fecha procesamiento.
+
+#### Pagos — Detalle (`/payments/:id`)
+
+Cabecera con titulo, badge de estado y corresponsal. Botones contextuales:
+- Pendiente → "Iniciar proceso"
+- En proceso → "Marcar como pagada" / "Rechazar"
+
+Al confirmar pago: dialog con resumen + campo de notas (numero de transferencia, referencia bancaria). Al rechazar: dialog con campo obligatorio de motivo. Tarjetas con datos de la liquidacion asociada y detalles del procesamiento.
+
+#### Notificaciones (`/notifications`)
+
+Lista de notificaciones con indicador de no leidas (punto azul), titulo, mensaje, tipo de entidad (badge: Liquidacion, Pago, Certificado, Corresponsal) y tiempo relativo. Clic marca como leida y navega a la entidad relacionada. Boton "Marcar todo como leido" en la cabecera.
+
+**Campana de notificaciones** (header): Badge rojo con contador de no leidas. Dropdown con las 8 mas recientes y link a la pagina completa.
+
+---
+
+### Portal de corresponsales
+
+#### Portal Dashboard (`/portal`)
+
+Saludo personalizado: "Bienvenido, [nombre del despacho]". Cuatro KPIs: borradores, en proceso, pagadas, certificados vigentes (formato X/Y). Alerta condicional si hay certificados vencidos o proximos a vencer (amarillo con link). Panel de facturas recientes (5 ultimas) con concepto, fecha, importe y estado.
+
+#### Portal Facturas (`/portal/invoices`)
+
+Tabla con buscador y paginacion. Columnas: concepto, importe, estado, fecha, acciones. Boton "Nueva factura" abre dialog con: concepto (textarea), importe, divisa, referencia (opcional) y subida de PDF de factura. Crea liquidacion en estado `draft`.
+
+#### Portal Detalle de Factura (`/portal/invoices/:id`)
+
+Cabecera con importe y estado. Timeline readonly de 5 pasos (mismo diseno que la app interna pero sin botones de accion de supervisor/financiero). Unica accion: "Enviar a aprobacion" (visible solo en estado borrador). Tarjetas de detalle con datos de la factura y textos de guia contextuales segun el estado actual ("Tu factura esta en borrador...", "Pendiente de aprobacion...", "Pago completado...").
+
+#### Portal Certificados (`/portal/certificates`)
+
+Tres tarjetas de estadisticas: vigentes (verde), proximos a vencer (amarillo), vencidos (rojo). Grid de tarjetas de certificados con pais, estado (badge), fechas de emision/vencimiento y link de descarga. Boton "Nuevo certificado" abre dialog con: pais (pre-rellenado con el pais del corresponsal), fecha emision, fecha vencimiento (auto-calculada) y subida de documento.
+
+#### Portal Perfil (`/portal/profile`)
+
+Dos secciones:
+- **Datos del despacho** (readonly): Nombre, pais, NIF. Nota: "Estos datos solo pueden ser modificados por un administrador."
+- **Datos de contacto** (editable): Direccion (textarea), email de contacto, telefono. Boton "Guardar cambios".
+
+#### Portal Notificaciones (`/portal/notifications`)
+
+Misma interfaz que las notificaciones internas, pero la navegacion al clicar se resuelve dentro del portal (`/portal/invoices/:id`, `/portal/certificates`, `/portal/profile`).
+
+---
+
+## Flujos de trabajo
+
+### 1. Ciclo de vida de una liquidacion
+
+```
+PAGADOR                    SUPERVISOR              FINANCIERO
+  |                            |                       |
+  |  Crear liquidacion         |                       |
+  |  (wizard 3 pasos)          |                       |
+  v                            |                       |
+[DRAFT] ----Enviar---->  [PENDING_APPROVAL]             |
+                               |                       |
+                         Aprobar / Rechazar             |
+                               |                       |
+                    [APPROVED] o [REJECTED]              |
+                         |                              |
+                   Solicitar pago                       |
+                   (requiere cert. vigente)             |
+                         v                              |
+                  [PAYMENT_REQUESTED] ---------> Cola de pagos
+                                                       |
+                                                 Procesar pago
+                                                       |
+                                              Pagar / Rechazar
+                                                       v
+                                                [PAID] o [REJECTED]
+```
+
+### 2. Gestion de certificados
+
+```
+PAGADOR/ADMIN                        EDGE FUNCTION (cron)
+  |                                        |
+  |  Registrar certificado                 |  check-certificates
+  |  (pais, fechas, documento)             |  (ejecuta periodicamente)
+  v                                        v
+[VALID] ─────(tiempo)──────> [EXPIRING_SOON] ──(tiempo)──> [EXPIRED]
+  |                               |                           |
+  |                         Notificacion                 Notificacion
+  |                         pre-alerta (90d, 30d)        "Certificado vencido"
+  |                               |                           |
+  |                         Renovar: subir nuevo              |
+  |                         certificado                       |
+  v                               v                           v
+Dashboard muestra          Alerta amarilla             Alerta roja
+"Vigentes: X"              en dashboard                Bloquea solicitud de pago
+```
+
+### 3. Onboarding de corresponsales
+
+```
+VIA INVITACION (admin)                  VIA AUTO-REGISTRO (corresponsal)
+  |                                        |
+  |  Admin abre detalle del                |  Corresponsal accede a /register
+  |  corresponsal                          |  Rellena: nombre, pais, NIF,
+  |  Clic "Invitar al portal"             |  email, contrasena
+  |  Introduce email                       |
+  v                                        v
+Edge Function:                        supabase.auth.signUp()
+invite-correspondent                  + INSERT correspondents
+  |                                   (status: pending_approval)
+  |  Crea usuario con                      |
+  |  role: corresponsal                    v
+  |  Vincula user_id                  Pantalla /pending
+  |                                   "Tu registro esta pendiente"
+  v                                        |
+Corresponsal recibe email             Admin ve corresponsal con
+con link de acceso                    estado "Pendiente" en la tabla
+  |                                        |
+  v                                   Admin clic "Aprobar"
+Acceso directo al portal                   |
+/portal                                    v
+                                      Edge Function:
+                                      approve-correspondent
+                                        |
+                                        |  Activa corresponsal
+                                        |  Asigna role: corresponsal
+                                        v
+                                      Corresponsal puede
+                                      acceder a /portal
+```
+
+### 4. Flujo de pago completo
+
+```
+CORRESPONSAL (portal)          PAGADOR (interno)         FINANCIERO
+  |                               |                          |
+  |  Crear factura                |                          |
+  |  (concepto, importe, PDF)     |                          |
+  |  Estado: draft                |                          |
+  |                               |                          |
+  |  Enviar a aprobacion          |                          |
+  v                               |                          |
+[PENDING_APPROVAL] ──────> Notificacion al supervisor        |
+                                  |                          |
+                            Supervisor aprueba               |
+                                  v                          |
+                            [APPROVED]                       |
+                                  |                          |
+                            Pagador solicita pago            |
+                            (verifica certificado)           |
+                                  v                          |
+                            [PAYMENT_REQUESTED] ──────> Aparece en cola
+                                                             |
+                                                       Financiero procesa
+                                                       (notas, referencia)
+                                                             v
+                                                       [PAID]
+                                                             |
+                                                       Notificacion al
+                                                       corresponsal
+                                                             v
+                                                  Corresponsal ve
+                                                  "Pagada" en su portal
+```
+
+---
+
+## Historias de usuario
+
+### Pagador
+
+| ID | Historia | Criterio de aceptacion |
+|----|----------|----------------------|
+| P1 | Como pagador, quiero crear una liquidacion seleccionando corresponsal, importe, divisa y concepto, para iniciar el proceso de pago. | Wizard de 3 pasos. Al finalizar, la liquidacion se crea en estado `draft`. Se muestra el estado del certificado del corresponsal en el paso 1. |
+| P2 | Como pagador, quiero enviar una liquidacion borrador a aprobacion, para que un supervisor la revise. | Boton "Enviar a aprobacion" visible solo en estado `draft`. Cambia estado a `pending_approval`. |
+| P3 | Como pagador, quiero solicitar el pago de una liquidacion aprobada, para que el departamento financiero la procese. | Boton "Solicitar pago" visible solo si estado = `approved` y existe certificado vigente. Crea solicitud de pago automaticamente. |
+| P4 | Como pagador, quiero ver un dashboard con KPIs de liquidaciones y alertas de certificados, para tener una vision general del estado actual. | Dashboard muestra 4 KPIs + liquidaciones recientes + alertas de certificados vencidos/por vencer. |
+| P5 | Como pagador, quiero registrar certificados de residencia fiscal de los corresponsales, para cumplir con requisitos legales. | Formulario con corresponsal, pais emisor, fechas y documento opcional. Status se calcula automaticamente. |
+| P6 | Como pagador, quiero dar de alta nuevos corresponsales con sus datos fiscales, para poder crear liquidaciones a su nombre. | Formulario con nombre, pais, NIF, direccion, email, telefono. Se crea en estado `active`. |
+
+### Supervisor
+
+| ID | Historia | Criterio de aceptacion |
+|----|----------|----------------------|
+| S1 | Como supervisor, quiero aprobar o rechazar liquidaciones pendientes, para validar que los datos y montos son correctos. | Botones "Aprobar" y "Rechazar" visibles en estado `pending_approval`. Al aprobar, cambia a `approved`. Al rechazar, cambia a `rejected`. |
+| S2 | Como supervisor, quiero ver la timeline completa de una liquidacion, para entender en que paso del flujo se encuentra. | Timeline visual de 5 pasos con estados coloreados y paso actual destacado. |
+| S3 | Como supervisor, quiero recibir notificaciones cuando se envian liquidaciones a aprobacion, para actuar sin demora. | Notificacion en campana (header) y en pagina de notificaciones al crearse una `pending_approval`. |
+
+### Financiero
+
+| ID | Historia | Criterio de aceptacion |
+|----|----------|----------------------|
+| F1 | Como financiero, quiero ver la cola de pagos pendientes con estadisticas, para priorizar mi trabajo. | Pagina `/payments` con 4 KPIs (pendientes, en proceso, pagadas, rechazadas) y tabla de solicitudes. |
+| F2 | Como financiero, quiero iniciar el proceso de una solicitud de pago, para indicar que la estoy gestionando. | Boton "Iniciar proceso" en estado `pending`. Cambia a `in_progress`. |
+| F3 | Como financiero, quiero marcar una solicitud como pagada con notas de referencia bancaria, para cerrar el ciclo. | Dialog de confirmacion con campo de notas (numero de transferencia). Cambia estado a `paid`. Se notifica al corresponsal. |
+| F4 | Como financiero, quiero rechazar una solicitud de pago indicando el motivo, para que se pueda corregir. | Dialog con campo obligatorio de motivo. Cambia estado a `rejected`. |
+
+### Admin
+
+| ID | Historia | Criterio de aceptacion |
+|----|----------|----------------------|
+| A1 | Como admin, quiero invitar a un corresponsal existente al portal, para que pueda gestionar sus facturas de forma autonoma. | Boton "Invitar al portal" en detalle del corresponsal. Introduce email. Edge Function crea usuario con rol `corresponsal` y envia email. |
+| A2 | Como admin, quiero aprobar el auto-registro de un corresponsal, para activar su acceso al portal. | Corresponsal con estado `pending_approval` muestra boton "Aprobar". Edge Function activa el corresponsal y asigna rol. |
+| A3 | Como admin, tengo acceso completo a todas las funcionalidades (pagador + supervisor + financiero), para poder gestionar cualquier situacion. | Acceso a todas las rutas internas incluidos pagos y configuracion. |
+
+### Corresponsal (portal)
+
+| ID | Historia | Criterio de aceptacion |
+|----|----------|----------------------|
+| C1 | Como corresponsal, quiero registrarme en el portal con los datos de mi despacho, para solicitar acceso. | Formulario en `/register`. Crea corresponsal + usuario. Estado `pending_approval`. Redirige a pantalla de espera. |
+| C2 | Como corresponsal, quiero crear facturas (borradores) subiendo el PDF de la factura, para iniciar el proceso de cobro. | Formulario con concepto, importe, divisa, referencia y upload de PDF. Se crea liquidacion en estado `draft`. |
+| C3 | Como corresponsal, quiero enviar mis facturas borrador a aprobacion, para que sean revisadas por el equipo interno. | Boton "Enviar a aprobacion" en detalle de factura (solo si estado = `draft`). |
+| C4 | Como corresponsal, quiero ver el estado de procesamiento de mis facturas en una timeline visual, para saber en que punto esta cada una. | Timeline readonly de 5 pasos. Textos guia contextuales segun el estado actual. |
+| C5 | Como corresponsal, quiero subir y gestionar mis certificados de residencia fiscal, para mantenerlos actualizados. | Pagina de certificados con estadisticas, lista de certificados y boton de subida. |
+| C6 | Como corresponsal, quiero recibir alertas cuando mis certificados esten proximos a vencer, para renovarlos a tiempo. | Alerta en el dashboard del portal con conteo de certificados vencidos/por vencer y link a gestion. |
+| C7 | Como corresponsal, quiero actualizar mis datos de contacto (direccion, email, telefono), para mantener mi informacion al dia. | Pagina de perfil con seccion editable. Los datos del despacho (nombre, pais, NIF) son readonly. |
+| C8 | Como corresponsal, quiero ver un dashboard con KPIs de mis facturas y certificados, para tener una vision rapida de mi actividad. | 4 KPIs (borradores, en proceso, pagadas, certificados vigentes) + facturas recientes + alertas. |
+| C9 | Como corresponsal, quiero recibir notificaciones cuando mis facturas cambien de estado, para estar informado del progreso. | Notificaciones vinculadas al corresponsal. Clic navega al detalle de factura en el portal. |
 
 ---
 
