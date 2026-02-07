@@ -12,9 +12,12 @@ import {
 import type { PaymentRequest, Liquidation } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react'
+import { SortButton } from '@/components/ui/sort-button'
+import { TableToolbar } from '@/components/ui/table-toolbar'
+import { EmptyState } from '@/components/ui/empty-state'
+import { type DateRange, filterByDateRange } from '@/components/ui/date-range-filter'
+import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
+import { ChevronLeft, ChevronRight, Eye, CreditCard } from 'lucide-react'
 import { getPaymentStatusConfig } from '@/lib/payment-utils'
 import { formatAmount } from '@/lib/liquidation-utils'
 import { formatDate } from '@/lib/certificate-utils'
@@ -31,30 +34,50 @@ interface PaymentsTableProps {
   loading: boolean
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'pending', label: 'Pendiente' },
+  { value: 'in_progress', label: 'En proceso' },
+  { value: 'paid', label: 'Pagada' },
+  { value: 'rejected', label: 'Rechazada' },
+]
+
+const csvColumns: CsvColumn<PaymentRequestWithLiquidation>[] = [
+  { header: 'Corresponsal', accessor: (row) => row.liquidations?.correspondents?.name ?? '' },
+  { header: 'Importe', accessor: (row) => (row.liquidations ? String(row.liquidations.amount) : '') },
+  { header: 'Divisa', accessor: (row) => row.liquidations?.currency ?? '' },
+  { header: 'Concepto', accessor: (row) => row.liquidations?.concept ?? '' },
+  { header: 'Estado', accessor: (row) => getPaymentStatusConfig(row.status).label },
+  { header: 'Solicitada', accessor: (row) => formatDate(row.requested_at) },
+  { header: 'Procesada', accessor: (row) => (row.processed_at ? formatDate(row.processed_at) : '') },
+]
+
 export function PaymentsTable({ data, loading }: PaymentsTableProps) {
   const navigate = useNavigate()
   const [sorting, setSorting] = useState<SortingState>([{ id: 'requested_at', desc: true }])
   const [globalFilter, setGlobalFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
 
   const filteredData = useMemo(() => {
-    if (statusFilter === 'all') return data
-    return data.filter((r) => r.status === statusFilter)
-  }, [data, statusFilter])
+    let result = data
+    if (statusFilter !== 'all') {
+      result = result.filter((r) => r.status === statusFilter)
+    }
+    result = filterByDateRange(result, dateRange, (r) => r.requested_at)
+    return result
+  }, [data, statusFilter, dateRange])
 
   const columns = useMemo<ColumnDef<PaymentRequestWithLiquidation>[]>(
     () => [
       {
         accessorKey: 'correspondents',
         header: 'Corresponsal',
-        cell: ({ row }) => {
-          const liq = row.original.liquidations
-          return (
-            <span className="font-medium" style={{ color: 'var(--g-text-primary)' }}>
-              {liq?.correspondents?.name ?? '—'}
-            </span>
-          )
-        },
+        cell: ({ row }) => (
+          <span className="font-medium" style={{ color: 'var(--g-text-primary)' }}>
+            {row.original.liquidations?.correspondents?.name ?? '—'}
+          </span>
+        ),
         enableSorting: false,
       },
       {
@@ -72,14 +95,11 @@ export function PaymentsTable({ data, loading }: PaymentsTableProps) {
       {
         accessorKey: 'concept',
         header: 'Concepto',
-        cell: ({ row }) => {
-          const liq = row.original.liquidations
-          return (
-            <span className="truncate max-w-[200px] block" title={liq?.concept ?? ''}>
-              {liq?.concept ?? '—'}
-            </span>
-          )
-        },
+        cell: ({ row }) => (
+          <span className="truncate max-w-[200px] block" title={row.original.liquidations?.concept ?? ''}>
+            {row.original.liquidations?.concept ?? '—'}
+          </span>
+        ),
       },
       {
         accessorKey: 'status',
@@ -104,12 +124,7 @@ export function PaymentsTable({ data, loading }: PaymentsTableProps) {
         id: 'actions',
         header: '',
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/payments/${row.original.id}`)}
-            aria-label="Ver detalle"
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/payments/${row.original.id}`)} aria-label="Ver detalle">
             <Eye className="h-4 w-4" />
           </Button>
         ),
@@ -132,60 +147,33 @@ export function PaymentsTable({ data, loading }: PaymentsTableProps) {
     initialState: { pagination: { pageSize: 15 } },
   })
 
+  function handleExport() {
+    exportTableToCsv(filteredData, csvColumns, csvFilename('solicitudes_pago'))
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
-            style={{ color: 'var(--g-text-secondary)' }}
-          />
-          <Input
-            placeholder="Buscar solicitud..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-9"
-            aria-label="Buscar solicitudes de pago"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-48"
-          aria-label="Filtrar por estado"
-        >
-          <option value="all">Todos los estados</option>
-          <option value="pending">Pendiente</option>
-          <option value="in_progress">En proceso</option>
-          <option value="paid">Pagada</option>
-          <option value="rejected">Rechazada</option>
-        </Select>
-      </div>
+      <TableToolbar
+        searchValue={globalFilter}
+        onSearchChange={setGlobalFilter}
+        searchPlaceholder="Buscar solicitud..."
+        statusOptions={STATUS_OPTIONS}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onExport={handleExport}
+        totalRecords={filteredData.length}
+        recordLabel="solicitudes"
+      />
 
-      {/* Table */}
-      <div
-        className="overflow-auto"
-        style={{
-          border: '1px solid var(--g-border-default)',
-          borderRadius: 'var(--g-radius-lg)',
-          backgroundColor: 'var(--g-surface-card)',
-        }}
-      >
+      <div className="overflow-auto" style={{ border: '1px solid var(--g-border-default)', borderRadius: 'var(--g-radius-lg)', backgroundColor: 'var(--g-surface-card)' }}>
         <table className="w-full text-sm">
           <thead>
             {table.getHeaderGroups().map((hg) => (
               <tr key={hg.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                 {hg.headers.map((h) => (
-                  <th
-                    key={h.id}
-                    className="px-4 py-3 text-left font-medium"
-                    style={{
-                      color: 'var(--g-text-secondary)',
-                      fontSize: 'var(--g-text-small)',
-                      backgroundColor: 'var(--g-surface-muted)',
-                    }}
-                  >
+                  <th key={h.id} className="px-4 py-3 text-left font-medium" style={{ color: 'var(--g-text-secondary)', fontSize: 'var(--g-text-small)', backgroundColor: 'var(--g-surface-muted)' }}>
                     {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
                   </th>
                 ))}
@@ -196,43 +184,21 @@ export function PaymentsTable({ data, loading }: PaymentsTableProps) {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
-                  {columns.map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="skeleton h-4 w-3/4 rounded" />
-                    </td>
-                  ))}
+                  {columns.map((_, j) => (<td key={j} className="px-4 py-3"><div className="skeleton h-4 w-3/4 rounded" /></td>))}
                 </tr>
               ))
             ) : table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center"
-                  style={{ color: 'var(--g-text-secondary)' }}
-                >
-                  No hay solicitudes de pago
-                </td>
-              </tr>
+              <tr><td colSpan={columns.length}>
+                <EmptyState icon={CreditCard} title="No hay solicitudes de pago" description={globalFilter || statusFilter !== 'all' || dateRange.from || dateRange.to ? 'No se encontraron solicitudes con los filtros aplicados' : 'Las solicitudes de pago aparecerán aquí'} />
+              </td></tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="transition-colors cursor-pointer"
-                  style={{ borderBottom: '1px solid var(--g-border-default)' }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--g-surface-muted)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }}
-                  onClick={() => navigate(`/payments/${row.original.id}`)}
-                >
+                <tr key={row.id} className="transition-colors cursor-pointer" style={{ borderBottom: '1px solid var(--g-border-default)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--g-surface-muted)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                  onClick={() => navigate(`/payments/${row.original.id}`)}>
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3"
-                      style={{ color: 'var(--g-text-primary)' }}
-                    >
+                    <td key={cell.id} className="px-4 py-3" style={{ color: 'var(--g-text-primary)' }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -243,54 +209,15 @@ export function PaymentsTable({ data, loading }: PaymentsTableProps) {
         </table>
       </div>
 
-      {/* Pagination */}
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-            {filteredData.length} solicitudes
-          </span>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-              {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>{table.getState().pagination.pageIndex + 1} / {table.getPageCount()}</span>
+            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}><ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       )}
     </div>
-  )
-}
-
-function SortButton({
-  column,
-  children,
-}: {
-  column: { toggleSorting: (d?: boolean) => void; getIsSorted: () => false | 'asc' | 'desc' }
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      className="flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      type="button"
-    >
-      {children}
-      <ArrowUpDown className="h-3 w-3" />
-    </button>
   )
 }

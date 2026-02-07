@@ -12,9 +12,12 @@ import {
 import type { Liquidation } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select } from '@/components/ui/select'
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search, Eye } from 'lucide-react'
+import { SortButton } from '@/components/ui/sort-button'
+import { TableToolbar } from '@/components/ui/table-toolbar'
+import { EmptyState } from '@/components/ui/empty-state'
+import { type DateRange, filterByDateRange } from '@/components/ui/date-range-filter'
+import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
+import { ChevronLeft, ChevronRight, Eye, Receipt } from 'lucide-react'
 import { getStatusConfig, formatAmount } from '@/lib/liquidation-utils'
 import { formatDate } from '@/lib/certificate-utils'
 import { useNavigate } from 'react-router-dom'
@@ -24,16 +27,45 @@ interface LiquidationsTableProps {
   loading: boolean
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'draft', label: 'Borrador' },
+  { value: 'pending_approval', label: 'Pendiente aprobación' },
+  { value: 'approved', label: 'Aprobada' },
+  { value: 'payment_requested', label: 'Pago solicitado' },
+  { value: 'paid', label: 'Pagada' },
+  { value: 'rejected', label: 'Rechazada' },
+]
+
+const csvColumns: CsvColumn<Liquidation>[] = [
+  {
+    header: 'Corresponsal',
+    accessor: (row) =>
+      (row as Liquidation & { correspondents?: { name: string } }).correspondents?.name ?? '',
+  },
+  { header: 'Importe', accessor: 'amount' },
+  { header: 'Divisa', accessor: 'currency' },
+  { header: 'Concepto', accessor: (row) => row.concept ?? '' },
+  { header: 'Referencia', accessor: (row) => row.reference ?? '' },
+  { header: 'Estado', accessor: (row) => getStatusConfig(row.status).label },
+  { header: 'Fecha', accessor: (row) => formatDate(row.created_at) },
+]
+
 export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
   const navigate = useNavigate()
   const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }])
   const [globalFilter, setGlobalFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [dateRange, setDateRange] = useState<DateRange>({ from: null, to: null })
 
   const filteredData = useMemo(() => {
-    if (statusFilter === 'all') return data
-    return data.filter((l) => l.status === statusFilter)
-  }, [data, statusFilter])
+    let result = data
+    if (statusFilter !== 'all') {
+      result = result.filter((l) => l.status === statusFilter)
+    }
+    result = filterByDateRange(result, dateRange, (l) => l.created_at)
+    return result
+  }, [data, statusFilter, dateRange])
 
   const columns = useMemo<ColumnDef<Liquidation>[]>(
     () => [
@@ -113,40 +145,26 @@ export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
     initialState: { pagination: { pageSize: 15 } },
   })
 
+  function handleExport() {
+    exportTableToCsv(filteredData, csvColumns, csvFilename('liquidaciones'))
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
-            style={{ color: 'var(--g-text-secondary)' }}
-          />
-          <Input
-            placeholder="Buscar liquidación..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className="pl-9"
-            aria-label="Buscar liquidaciones"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-48"
-          aria-label="Filtrar por estado"
-        >
-          <option value="all">Todos los estados</option>
-          <option value="draft">Borrador</option>
-          <option value="pending_approval">Pendiente aprobación</option>
-          <option value="approved">Aprobada</option>
-          <option value="payment_requested">Pago solicitado</option>
-          <option value="paid">Pagada</option>
-          <option value="rejected">Rechazada</option>
-        </Select>
-      </div>
+      <TableToolbar
+        searchValue={globalFilter}
+        onSearchChange={setGlobalFilter}
+        searchPlaceholder="Buscar liquidación..."
+        statusOptions={STATUS_OPTIONS}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onExport={handleExport}
+        totalRecords={filteredData.length}
+        recordLabel="liquidaciones"
+      />
 
-      {/* Table */}
       <div
         className="overflow-auto"
         style={{
@@ -188,12 +206,16 @@ export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
               ))
             ) : table.getRowModel().rows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center"
-                  style={{ color: 'var(--g-text-secondary)' }}
-                >
-                  No hay liquidaciones
+                <td colSpan={columns.length}>
+                  <EmptyState
+                    icon={Receipt}
+                    title="No hay liquidaciones"
+                    description={
+                      globalFilter || statusFilter !== 'all' || dateRange.from || dateRange.to
+                        ? 'No se encontraron liquidaciones con los filtros aplicados'
+                        : 'Las liquidaciones creadas aparecerán aquí'
+                    }
+                  />
                 </td>
               </tr>
             ) : (
@@ -211,11 +233,7 @@ export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
                   onClick={() => navigate(`/liquidations/${row.original.id}`)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3"
-                      style={{ color: 'var(--g-text-primary)' }}
-                    >
+                    <td key={cell.id} className="px-4 py-3" style={{ color: 'var(--g-text-primary)' }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -226,54 +244,21 @@ export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
         </table>
       </div>
 
-      {/* Pagination */}
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-            {filteredData.length} liquidaciones
-          </span>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
+            <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
               {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
+            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
     </div>
-  )
-}
-
-function SortButton({
-  column,
-  children,
-}: {
-  column: { toggleSorting: (d?: boolean) => void; getIsSorted: () => false | 'asc' | 'desc' }
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      className="flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      type="button"
-    >
-      {children}
-      <ArrowUpDown className="h-3 w-3" />
-    </button>
   )
 }

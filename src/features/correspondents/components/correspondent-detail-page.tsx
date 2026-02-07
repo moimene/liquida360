@@ -5,6 +5,7 @@ import { ArrowLeft, Pencil, Building2, FileCheck, Receipt, Mail, UserCheck } fro
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { useCorrespondents } from '../hooks/use-correspondents'
 import { CorrespondentForm } from './correspondent-form'
 import { CorrespondentCertificatesTab } from '@/features/certificates'
@@ -124,6 +125,15 @@ export function CorrespondentDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Inicio', href: '/' },
+          { label: 'Corresponsales', href: '/correspondents' },
+          { label: correspondent.name },
+        ]}
+      />
+
       {/* Back + Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">

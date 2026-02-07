@@ -1,10 +1,14 @@
 import { useEffect, useMemo } from 'react'
 import { Clock, CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import { usePaymentRequests } from '../hooks/use-payment-requests'
+import { usePaymentsRealtime } from '../hooks/use-payments-realtime'
 import { PaymentsTable } from './payments-table'
 
 export function PaymentsPage() {
   const { requests, loading, fetchRequests } = usePaymentRequests()
+
+  // Realtime subscription for live updates
+  usePaymentsRealtime()
 
   useEffect(() => {
     fetchRequests()

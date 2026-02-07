@@ -121,3 +121,17 @@ a:hover {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
+
+/* Command Palette overlay */
+.command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  animation: fade-in 0.15s ease-out;
+}
+
+.command-palette-panel {
+  animation: scale-in 0.15s ease-out;
+}

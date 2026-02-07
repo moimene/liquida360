@@ -12,8 +12,11 @@ import {
 import type { Certificate } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search, ExternalLink } from 'lucide-react'
+import { SortButton } from '@/components/ui/sort-button'
+import { TableToolbar } from '@/components/ui/table-toolbar'
+import { EmptyState } from '@/components/ui/empty-state'
+import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
+import { ChevronLeft, ChevronRight, ExternalLink, FileCheck } from 'lucide-react'
 import { getCertificateStatus, formatDate } from '@/lib/certificate-utils'
 import { COUNTRIES } from '@/lib/countries'
 
@@ -22,9 +25,39 @@ interface CertificatesTableProps {
   loading: boolean
 }
 
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'valid', label: 'Vigente' },
+  { value: 'expiring_soon', label: 'Por vencer' },
+  { value: 'expired', label: 'Vencido' },
+]
+
+const csvColumns: CsvColumn<Certificate>[] = [
+  {
+    header: 'Corresponsal',
+    accessor: (row) => (row as Certificate & { correspondents?: { name: string } }).correspondents?.name ?? '',
+  },
+  {
+    header: 'País emisor',
+    accessor: (row) => {
+      const country = COUNTRIES.find((c) => c.code === row.issuing_country)
+      return country?.name ?? row.issuing_country
+    },
+  },
+  { header: 'Emisión', accessor: (row) => formatDate(row.issue_date) },
+  { header: 'Vencimiento', accessor: (row) => formatDate(row.expiry_date) },
+  { header: 'Estado', accessor: (row) => getCertificateStatus(row.expiry_date).label },
+]
+
 export function CertificatesTable({ data, loading }: CertificatesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'expiry_date', desc: false }])
   const [globalFilter, setGlobalFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  const filteredData = useMemo(() => {
+    if (statusFilter === 'all') return data
+    return data.filter((c) => getCertificateStatus(c.expiry_date).status === statusFilter)
+  }, [data, statusFilter])
 
   const columns = useMemo<ColumnDef<Certificate>[]>(
     () => [
@@ -33,11 +66,7 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
         header: 'Corresponsal',
         cell: ({ row }) => {
           const corr = row.original as Certificate & { correspondents?: { name: string } }
-          return (
-            <span className="font-medium" style={{ color: 'var(--g-text-primary)' }}>
-              {corr.correspondents?.name ?? '—'}
-            </span>
-          )
+          return (<span className="font-medium" style={{ color: 'var(--g-text-primary)' }}>{corr.correspondents?.name ?? '—'}</span>)
         },
         enableSorting: false,
       },
@@ -50,11 +79,7 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
           return country?.name ?? code
         },
       },
-      {
-        accessorKey: 'issue_date',
-        header: 'Emisión',
-        cell: ({ row }) => formatDate(row.getValue('issue_date')),
-      },
+      { accessorKey: 'issue_date', header: 'Emisión', cell: ({ row }) => formatDate(row.getValue('issue_date')) },
       {
         accessorKey: 'expiry_date',
         header: ({ column }) => <SortButton column={column}>Vencimiento</SortButton>,
@@ -74,15 +99,7 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
         cell: ({ row }) => {
           if (!row.original.document_url) return null
           return (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                window.open(row.original.document_url!, '_blank')
-              }}
-              aria-label="Ver documento"
-            >
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); window.open(row.original.document_url!, '_blank') }} aria-label="Ver documento">
               <ExternalLink className="h-4 w-4" />
             </Button>
           )
@@ -94,7 +111,7 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
   )
 
   const table = useReactTable({
-    data,
+    data: filteredData,
     columns,
     state: { sorting, globalFilter },
     onSortingChange: setSorting,
@@ -106,50 +123,32 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
     initialState: { pagination: { pageSize: 15 } },
   })
 
+  function handleExport() {
+    exportTableToCsv(filteredData, csvColumns, csvFilename('certificados'))
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative max-w-sm">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
-          style={{ color: 'var(--g-text-secondary)' }}
-        />
-        <Input
-          placeholder="Buscar certificado..."
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="pl-9"
-          aria-label="Buscar certificados"
-        />
-      </div>
+      <TableToolbar
+        searchValue={globalFilter}
+        onSearchChange={setGlobalFilter}
+        searchPlaceholder="Buscar certificado..."
+        statusOptions={STATUS_OPTIONS}
+        statusValue={statusFilter}
+        onStatusChange={setStatusFilter}
+        onExport={handleExport}
+        totalRecords={table.getFilteredRowModel().rows.length}
+        recordLabel="certificados"
+      />
 
-      <div
-        className="overflow-auto"
-        style={{
-          border: '1px solid var(--g-border-default)',
-          borderRadius: 'var(--g-radius-lg)',
-          backgroundColor: 'var(--g-surface-card)',
-        }}
-      >
+      <div className="overflow-auto" style={{ border: '1px solid var(--g-border-default)', borderRadius: 'var(--g-radius-lg)', backgroundColor: 'var(--g-surface-card)' }}>
         <table className="w-full text-sm">
           <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr
-                key={headerGroup.id}
-                style={{ borderBottom: '1px solid var(--g-border-default)' }}
-              >
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-4 py-3 text-left font-medium"
-                    style={{
-                      color: 'var(--g-text-secondary)',
-                      fontSize: 'var(--g-text-small)',
-                      backgroundColor: 'var(--g-surface-muted)',
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+            {table.getHeaderGroups().map((hg) => (
+              <tr key={hg.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
+                {hg.headers.map((h) => (
+                  <th key={h.id} className="px-4 py-3 text-left font-medium" style={{ color: 'var(--g-text-secondary)', fontSize: 'var(--g-text-small)', backgroundColor: 'var(--g-surface-muted)' }}>
+                    {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
                   </th>
                 ))}
               </tr>
@@ -159,34 +158,18 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
-                  {columns.map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="skeleton h-4 w-3/4 rounded" />
-                    </td>
-                  ))}
+                  {columns.map((_, j) => (<td key={j} className="px-4 py-3"><div className="skeleton h-4 w-3/4 rounded" /></td>))}
                 </tr>
               ))
             ) : table.getRowModel().rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-4 py-12 text-center"
-                  style={{ color: 'var(--g-text-secondary)' }}
-                >
-                  {globalFilter
-                    ? 'No se encontraron certificados'
-                    : 'No hay certificados registrados'}
-                </td>
-              </tr>
+              <tr><td colSpan={columns.length}>
+                <EmptyState icon={FileCheck} title={globalFilter || statusFilter !== 'all' ? 'No se encontraron certificados' : 'No hay certificados registrados'} description="Los certificados de residencia fiscal aparecerán aquí" />
+              </td></tr>
             ) : (
               table.getRowModel().rows.map((row) => (
                 <tr key={row.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="px-4 py-3"
-                      style={{ color: 'var(--g-text-primary)' }}
-                    >
+                    <td key={cell.id} className="px-4 py-3" style={{ color: 'var(--g-text-primary)' }}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -198,54 +181,14 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
       </div>
 
       {table.getPageCount() > 1 && (
-        <div className="flex items-center justify-between">
-          <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-            {table.getFilteredRowModel().rows.length} certificados
-          </span>
+        <div className="flex items-center justify-end">
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-              aria-label="Página anterior"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-              Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-              aria-label="Página siguiente"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} aria-label="Página anterior"><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}</span>
+            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} aria-label="Página siguiente"><ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       )}
     </div>
-  )
-}
-
-function SortButton({
-  column,
-  children,
-}: {
-  column: { toggleSorting: (desc?: boolean) => void; getIsSorted: () => false | 'asc' | 'desc' }
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      className="flex items-center gap-1 font-medium"
-      onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-      type="button"
-    >
-      {children}
-      <ArrowUpDown className="h-3 w-3" />
-    </button>
   )
 }

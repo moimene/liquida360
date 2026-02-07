@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { useLiquidations } from '../hooks/use-liquidations'
 import { usePaymentRequests } from '@/features/payments/hooks/use-payment-requests'
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -146,6 +147,15 @@ export function LiquidationDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Inicio', href: '/' },
+          { label: 'Liquidaciones', href: '/liquidations' },
+          { label: liquidation.reference ?? formatAmount(liquidation.amount, liquidation.currency) },
+        ]}
+      />
+
       {/* Back + Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">

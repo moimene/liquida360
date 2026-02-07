@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLiquidations } from '../hooks/use-liquidations'
+import { useLiquidationsRealtime } from '../hooks/use-liquidations-realtime'
 import { useCorrespondents } from '@/features/correspondents'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { LiquidationsTable } from './liquidations-table'
@@ -15,6 +16,9 @@ export function LiquidationsPage() {
   const user = useAuth((s) => s.user)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Realtime subscription for live updates
+  useLiquidationsRealtime()
 
   useEffect(() => {
     fetchLiquidations()

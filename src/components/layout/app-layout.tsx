@@ -4,6 +4,7 @@ import { Sidebar } from './sidebar'
 import { Header } from './header'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { SuspenseLoader } from '@/components/suspense-loader'
+import { CommandPalette } from '@/components/ui/command-palette'
 
 interface AppLayoutProps {
   title?: string
@@ -44,6 +45,9 @@ export function AppLayout({ title = 'Dashboard' }: AppLayoutProps) {
           </ErrorBoundary>
         </main>
       </div>
+
+      {/* Global Command Palette (Cmd+K / Ctrl+K) */}
+      <CommandPalette />
     </div>
   )
 }

@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
@@ -131,6 +132,15 @@ export function PaymentDetailPage() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Inicio', href: '/' },
+          { label: 'Pagos', href: '/payments' },
+          { label: `Solicitud #${id?.slice(0, 8) ?? ''}` },
+        ]}
+      />
+
       {/* Back + Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">
