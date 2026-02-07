@@ -65,7 +65,7 @@ export function CertificateExpiryChart({ certificates }: CertificateExpiryChartP
                   borderRadius: 'var(--g-radius-sm)',
                   fontSize: 12,
                 }}
-                formatter={(value: number) => [`${value} días`, 'Días restantes']}
+                formatter={(value: number | string | undefined) => [`${value ?? 0} días`, 'Días restantes']}
               />
               <Bar dataKey="days" radius={[0, 4, 4, 0]}>
                 {chartData.map((entry, index) => (

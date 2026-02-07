@@ -52,7 +52,7 @@ export function LiquidationTrendChart({ liquidations }: LiquidationTrendChartPro
                 borderRadius: 'var(--g-radius-sm)',
                 fontSize: 12,
               }}
-              formatter={(value: number) => [`${value.toLocaleString('es-ES')} EUR`, 'Importe']}
+              formatter={(value: number | string | undefined) => [`${(value ?? 0).toLocaleString('es-ES')} EUR`, 'Importe']}
             />
             <Bar dataKey="total" fill="var(--g-brand-3308)" radius={[4, 4, 0, 0]} />
           </BarChart>
