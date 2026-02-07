@@ -84,14 +84,15 @@ export const useCertificates = create<CertificatesState>((set, get) => ({
         document_url: documentUrl,
         status: statusInfo.status,
       })
-      .select()
+      .select('*, correspondents(name, country)')
       .single()
 
     if (error) {
       return { data: null, error: error.message }
     }
 
-    set({ certificates: [...get().certificates, data] })
+    // Re-fetch to ensure all relations are loaded correctly
+    await get().fetchCertificates()
     return { data, error: null }
   },
 
