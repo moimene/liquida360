@@ -21,7 +21,8 @@ Plataforma de gestion de liquidaciones de pagos para despachos de abogados. Gest
 | **Notificaciones** | Sonner |
 | **Fechas** | date-fns |
 | **Iconos** | Lucide React |
-| **Tests** | Vitest + Testing Library |
+| **Tests unitarios** | Vitest + Testing Library |
+| **Tests E2E** | Playwright (26 specs, 146 tests) |
 | **Lint/Format** | ESLint 9 + Prettier |
 
 ---
@@ -52,9 +53,25 @@ src/
   types/                  # Tipos globales (UserRole, Database, entidades)
   __tests__/              # 120 unit tests
 
+e2e/
+  auth/                   # Login, logout, registro, acceso por roles
+  certificates/           # CRUD y filtros de certificados
+  correspondents/         # CRUD y detalle de corresponsales
+  cross-cutting/          # Accesibilidad, breadcrumbs, command palette, CSV, notificaciones
+  dashboard/              # KPIs, graficos, alertas
+  liquidations/           # Wizard, detalle, workflow de aprobacion
+  payments/               # Cola y procesamiento de pagos
+  portal/                 # Dashboard, facturas, certificados, perfil del corresponsal
+  settings/               # Panel de administracion
+  workflows/              # Flujos E2E completos (ciclo liquidacion, alertas certificados)
+  fixtures/               # Auth fixture con retry para rate-limiting
+  helpers/                # Utilidades (waitForToast, hasTableData, etc.)
+  pages/                  # Page Object Models (15 POMs)
+
 supabase/
-  migrations/             # 3 migraciones SQL (schema + RLS + portal)
-  functions/              # 4 Edge Functions
+  migrations/             # 6 migraciones SQL (schema + RLS + portal + audit + registro + storage)
+  functions/              # 5 Edge Functions
+    manage-users/         # CRUD de usuarios internos (admin only)
     check-certificates/   # Verificacion de vencimiento de certificados
     generate-notifications/ # Generacion automatica de notificaciones
     invite-correspondent/ # Invitacion de corresponsal al portal
@@ -493,14 +510,23 @@ npm run dev
 # Build (TypeScript + Vite)
 npm run build
 
-# Tests (120 tests)
+# Tests unitarios (120 tests)
 npm test
 
-# Tests con watch
+# Tests unitarios con watch
 npm run test:watch
 
-# Tests con coverage
+# Tests unitarios con coverage
 npm run test:coverage
+
+# Tests E2E (146 tests, requiere .env.test en e2e/)
+npx playwright test
+
+# Tests E2E con UI interactiva
+npx playwright test --ui
+
+# Tests E2E - un spec concreto
+npx playwright test e2e/auth/login.spec.ts
 
 # Lint
 npm run lint
@@ -519,9 +545,59 @@ npm run preview
 ## Variables de entorno
 
 ```env
+# Frontend (requerido)
 VITE_SUPABASE_URL=https://xxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbG...
+
+# Backend (solo para deploy de Edge Functions y migraciones)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbG...
 ```
+
+### Variables E2E (`e2e/.env.test`)
+
+```env
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbG...
+TEST_ADMIN_EMAIL=admin@liquida360.demo
+TEST_ADMIN_PASSWORD=Demo2026!
+TEST_PAGADOR_EMAIL=pagador@liquida360.demo
+TEST_PAGADOR_PASSWORD=Demo2026!
+TEST_SUPERVISOR_EMAIL=supervisor@liquida360.demo
+TEST_SUPERVISOR_PASSWORD=Demo2026!
+TEST_FINANCIERO_EMAIL=financiero@liquida360.demo
+TEST_FINANCIERO_PASSWORD=Demo2026!
+TEST_CORRESPONSAL_EMAIL=corresponsal1@liquida360.demo
+TEST_CORRESPONSAL_PASSWORD=Demo2026!
+```
+
+---
+
+## Tests E2E (Playwright)
+
+Suite completa de tests end-to-end con **146 tests en 26 specs**, usando Page Object Model pattern.
+
+### Estructura
+
+| Directorio | Tests | Cobertura |
+|------------|-------|-----------|
+| `e2e/auth/` | 4 specs | Login, logout, registro, acceso por roles |
+| `e2e/certificates/` | 2 specs | CRUD, filtros por estado, vencimiento |
+| `e2e/correspondents/` | 2 specs | CRUD, detalle con tabs |
+| `e2e/cross-cutting/` | 5 specs | Accesibilidad (WCAG), breadcrumbs, command palette, CSV, notificaciones |
+| `e2e/dashboard/` | 1 spec | KPIs, graficos, alertas |
+| `e2e/liquidations/` | 3 specs | Wizard 3 pasos, detalle, workflow aprobacion |
+| `e2e/payments/` | 2 specs | Cola de pagos, procesamiento |
+| `e2e/portal/` | 4 specs | Dashboard, facturas, certificados, perfil del corresponsal |
+| `e2e/settings/` | 1 spec | Panel de administracion |
+| `e2e/workflows/` | 2 specs | Ciclo completo liquidacion, alertas certificados |
+
+### Configuracion
+
+- **Workers**: 3 en local, 1 en CI (evita rate-limiting de Supabase Auth)
+- **Retries**: 0 en local, 2 en CI
+- **Auth fixture**: Login con retry automatico (5 intentos, backoff exponencial) para manejar rate-limiting
+- **Proyectos**: Desktop (Chromium), Mobile (Pixel 7)
+- **CI**: GitHub Actions workflow (`.github/workflows/e2e.yml`)
 
 ---
 
@@ -533,12 +609,25 @@ VITE_SUPABASE_ANON_KEY=eyJhbG...
 |---------|-----------|
 | `001_initial_schema.sql` | Enums, tablas (correspondents, certificates, liquidations, payment_requests, notifications), RLS, triggers |
 | `002_helper_functions.sql` | `get_user_role()`, `handle_payment_request()`, notificacion automatica |
-| `003_correspondent_portal.sql` | `user_id` en correspondents, `invoice_url` en liquidations, RLS para corresponsales, bucket storage |
+| `003_correspondent_portal.sql` | `user_id` en correspondents, `invoice_url` en liquidations, RLS para corresponsales, bucket `invoices` |
+| `004_audit_and_cron.sql` | Audit log, cron jobs para certificados y notificaciones |
+| `005_allow_self_registration.sql` | Permite auto-registro de corresponsales |
+| `006_create_documents_bucket.sql` | Bucket `documents` para ficheros de certificados + RLS policies |
+
+### Storage Buckets
+
+| Bucket | Uso | Publico |
+|--------|-----|---------|
+| `documents` | Ficheros de certificados de residencia fiscal (PDF, JPG, PNG) | Si |
+| `invoices` | Facturas PDF subidas por corresponsales | Si |
 
 ### Edge Functions
 
+Todas las Edge Functions se despliegan con `--no-verify-jwt` porque Supabase Auth emite tokens ES256 que el gateway de Edge Functions no valida correctamente. Cada funcion implementa su propia verificacion de autenticacion internamente.
+
 | Funcion | Trigger | Descripcion |
 |---------|---------|-------------|
+| `manage-users` | Admin UI | CRUD de usuarios internos (list, invite, update_role) |
 | `check-certificates` | Cron / manual | Verifica certificados proximos a vencer |
 | `generate-notifications` | Cron / manual | Genera notificaciones automaticas |
 | `invite-correspondent` | Admin UI | Crea usuario + vincula con corresponsal |
@@ -585,7 +674,8 @@ supabase link --project-ref <PROJECT_REF>
 # Push migraciones
 supabase db push
 
-# Deploy Edge Functions
+# Deploy Edge Functions (--no-verify-jwt requerido por tokens ES256)
+supabase functions deploy manage-users --no-verify-jwt
 supabase functions deploy check-certificates --no-verify-jwt
 supabase functions deploy generate-notifications --no-verify-jwt
 supabase functions deploy invite-correspondent --no-verify-jwt
@@ -598,13 +688,15 @@ supabase functions deploy approve-correspondent --no-verify-jwt
 
 | Metrica | Valor |
 |---------|-------|
-| Archivos TS/TSX | 120 |
+| Archivos TS/TSX | 120+ |
 | Feature modules | 9 |
 | Componentes UI compartidos | 14 |
 | Graficos dashboard (Recharts) | 3 |
-| Unit tests | 120 |
-| Edge Functions | 4 |
-| Migraciones SQL | 3 |
+| Unit tests (Vitest) | 120 |
+| E2E tests (Playwright) | 146 (26 specs, 15 POMs) |
+| Edge Functions | 5 |
+| Migraciones SQL | 6 |
+| Storage Buckets | 2 (documents, invoices) |
 | Roles de usuario | 5 |
 | Rutas totales | 17 |
 | Suscripciones Realtime | 2 (liquidaciones, pagos) |
