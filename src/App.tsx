@@ -7,6 +7,7 @@ import {
   LoginPage,
   RegisterPage,
   PendingApprovalPage,
+  AuthCallbackPage,
   ProtectedRoute,
   PortalRoute,
   useAuth,
@@ -114,6 +115,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/pending" element={<PendingApprovalPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Portal routes (corresponsal only) */}
             <Route

@@ -1,6 +1,7 @@
 export { LoginPage } from './components/login-page'
 export { RegisterPage } from './components/register-page'
 export { PendingApprovalPage } from './components/pending-approval-page'
+export { AuthCallbackPage } from './components/auth-callback-page'
 export { ProtectedRoute } from './components/protected-route'
 export { PortalRoute } from './components/portal-route'
 export { useAuth } from './hooks/use-auth'
