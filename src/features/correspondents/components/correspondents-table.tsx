@@ -16,12 +16,16 @@ import { SortButton } from '@/components/ui/sort-button'
 import { TableToolbar } from '@/components/ui/table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
-import { ChevronLeft, ChevronRight, Eye, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Users, UserCheck } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import type { UserRole } from '@/types'
 
 interface CorrespondentsTableProps {
   data: Correspondent[]
   loading: boolean
+  role?: UserRole | null
+  onApprove?: (id: string) => void
+  approvingId?: string | null
 }
 
 const STATUS_OPTIONS = [
@@ -39,7 +43,7 @@ const csvColumns: CsvColumn<Correspondent>[] = [
   { header: 'Estado', accessor: (row) => row.status === 'active' ? 'Activo' : row.status === 'pending_approval' ? 'Pendiente' : 'Inactivo' },
 ]
 
-export function CorrespondentsTable({ data, loading }: CorrespondentsTableProps) {
+export function CorrespondentsTable({ data, loading, role, onApprove, approvingId }: CorrespondentsTableProps) {
   const navigate = useNavigate()
   const [sorting, setSorting] = useState<SortingState>([])
   const [globalFilter, setGlobalFilter] = useState('')
@@ -87,14 +91,27 @@ export function CorrespondentsTable({ data, loading }: CorrespondentsTableProps)
         id: 'actions',
         header: '',
         cell: ({ row }) => (
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/correspondents/${row.original.id}`)} aria-label={`Ver detalle de ${row.original.name}`}>
-            <Eye className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            {row.original.status === 'pending_approval' && role === 'admin' && onApprove && (
+              <Button
+                size="sm"
+                onClick={() => onApprove(row.original.id)}
+                loading={approvingId === row.original.id}
+                aria-label={`Aprobar a ${row.original.name}`}
+              >
+                <UserCheck className="h-3.5 w-3.5" />
+                Aprobar
+              </Button>
+            )}
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/correspondents/${row.original.id}`)} aria-label={`Ver detalle de ${row.original.name}`}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
         ),
         enableSorting: false,
       },
     ],
-    [navigate],
+    [navigate, role, onApprove, approvingId],
   )
 
   const table = useReactTable({
