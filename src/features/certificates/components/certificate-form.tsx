@@ -1,7 +1,7 @@
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, Upload } from 'lucide-react'
+import { AlertTriangle, Upload, FileText, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -38,6 +38,7 @@ export function CertificateForm({
   onFileSelect,
 }: CertificateFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
 
   const {
     register,
@@ -85,8 +86,16 @@ export function CertificateForm({
 
   function handleClose() {
     reset()
+    setSelectedFileName(null)
     onFileSelect(undefined)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     onClose()
+  }
+
+  function handleRemoveFile() {
+    setSelectedFileName(null)
+    onFileSelect(undefined)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
@@ -211,34 +220,64 @@ export function CertificateForm({
           {/* File upload */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="document">Documento (PDF, imagen)</Label>
-            <div
-              className="flex items-center gap-3 p-3 cursor-pointer transition-colors"
-              style={{
-                border: '1px dashed var(--g-border-subtle)',
-                borderRadius: 'var(--g-radius-md)',
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-              role="button"
-              tabIndex={0}
-              aria-label="Subir documento del certificado"
-            >
-              <Upload className="h-5 w-5" style={{ color: 'var(--g-text-secondary)' }} />
-              <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
-                Haz clic para seleccionar archivo
-              </span>
-              <input
-                ref={fileInputRef}
-                id="document"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  onFileSelect(file)
+            {selectedFileName ? (
+              <div
+                className="flex items-center gap-3 p-3"
+                style={{
+                  border: '1px solid var(--g-border-default)',
+                  borderRadius: 'var(--g-radius-md)',
+                  backgroundColor: 'var(--g-surface-secondary)',
                 }}
-              />
-            </div>
+              >
+                <FileText className="h-5 w-5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                <span
+                  className="text-sm flex-1 truncate"
+                  style={{ color: 'var(--g-text-primary)' }}
+                  title={selectedFileName}
+                >
+                  {selectedFileName}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveFile}
+                  className="shrink-0 p-1 rounded transition-colors"
+                  style={{ color: 'var(--g-text-secondary)' }}
+                  aria-label="Eliminar archivo seleccionado"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-3 p-3 cursor-pointer transition-colors"
+                style={{
+                  border: '1px dashed var(--g-border-subtle)',
+                  borderRadius: 'var(--g-radius-md)',
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                role="button"
+                tabIndex={0}
+                aria-label="Subir documento del certificado"
+              >
+                <Upload className="h-5 w-5" style={{ color: 'var(--g-text-secondary)' }} />
+                <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+                  Haz clic para seleccionar archivo
+                </span>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              id="document"
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                setSelectedFileName(file?.name ?? null)
+                onFileSelect(file)
+              }}
+            />
             <HelpText>{CERTIFICATES_HELP.formFileUpload}</HelpText>
           </div>
         </div>
