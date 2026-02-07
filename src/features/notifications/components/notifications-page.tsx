@@ -4,9 +4,11 @@ import { Bell, CheckCheck, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { InfoTip } from '@/components/ui/info-tip'
 import { useNotifications } from '../hooks/use-notifications'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { formatRelativeTime } from '@/lib/notification-utils'
+import { NOTIFICATIONS_HELP } from '../constants/help-texts'
 
 export function NotificationsPage() {
   const navigate = useNavigate()
@@ -43,10 +45,11 @@ export function NotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2
-            className="font-bold"
+            className="font-bold flex items-center gap-2"
             style={{ fontSize: 'var(--g-text-h2)', color: 'var(--g-text-primary)' }}
           >
             Notificaciones
+            <InfoTip content={NOTIFICATIONS_HELP.pageHeaderTip} side="bottom" />
           </h2>
           <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
             {unreadCount > 0

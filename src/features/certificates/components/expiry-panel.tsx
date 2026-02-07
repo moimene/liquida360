@@ -2,9 +2,11 @@ import { useMemo } from 'react'
 import { AlertTriangle, Clock, ShieldAlert } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/info-tip'
 import type { Certificate } from '@/types'
 import { getCertificateStatus, formatDate } from '@/lib/certificate-utils'
 import { COUNTRIES } from '@/lib/countries'
+import { CERTIFICATES_HELP } from '../constants/help-texts'
 
 interface ExpiryPanelProps {
   certificates: Certificate[]
@@ -42,9 +44,10 @@ export function ExpiryPanel({ certificates }: ExpiryPanelProps) {
                 style={{ color: 'var(--status-error)' }}
               />
               <div className="flex-1">
-                <p className="font-bold text-sm" style={{ color: 'var(--g-text-primary)' }}>
+                <p className="font-bold text-sm flex items-center gap-1" style={{ color: 'var(--g-text-primary)' }}>
                   {expired.length} certificado{expired.length !== 1 ? 's' : ''} vencido
                   {expired.length !== 1 ? 's' : ''}
+                  <InfoTip content={CERTIFICATES_HELP.expiryThresholdTip} side="right" />
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {expired.map(({ cert }) => {

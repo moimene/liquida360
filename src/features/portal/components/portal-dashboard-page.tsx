@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Receipt, FileCheck, AlertTriangle, Clock } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { InfoTip } from '@/components/ui/info-tip'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { useAuth } from '@/features/auth'
+import { PORTAL_HELP } from '../constants/help-texts'
 import { usePortalCorrespondent } from '../hooks/use-portal-correspondent'
 import { usePortalLiquidations } from '../hooks/use-portal-liquidations'
 import { usePortalCertificates } from '../hooks/use-portal-certificates'
@@ -66,6 +69,10 @@ export function PortalDashboardPage() {
         </p>
       </div>
 
+      <InfoPanel variant="tip" dismissible dismissKey="portal-welcome" className="mb-2">
+        {PORTAL_HELP.dashboardWelcome}
+      </InfoPanel>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
@@ -73,24 +80,28 @@ export function PortalDashboardPage() {
           label="Borradores"
           value={stats.drafts}
           color="var(--g-text-secondary)"
+          helpTip={PORTAL_HELP.kpiBorradores}
         />
         <KPICard
           icon={Clock}
           label="En proceso"
           value={stats.pending}
           color="hsl(45, 93%, 47%)"
+          helpTip={PORTAL_HELP.kpiEnProceso}
         />
         <KPICard
           icon={Receipt}
           label="Pagadas"
           value={stats.paid}
           color="var(--g-brand-3308)"
+          helpTip={PORTAL_HELP.kpiPagadas}
         />
         <KPICard
           icon={FileCheck}
           label="Certificados vigentes"
           value={`${stats.validCerts}/${stats.totalCerts}`}
           color={stats.expiringCerts > 0 ? 'hsl(0, 84%, 60%)' : 'var(--g-brand-3308)'}
+          helpTip={PORTAL_HELP.kpiCertificados}
         />
       </div>
 
@@ -184,11 +195,13 @@ function KPICard({
   label,
   value,
   color,
+  helpTip,
 }: {
   icon: React.ElementType
   label: string
   value: string | number
   color: string
+  helpTip?: string
 }) {
   return (
     <Card>
@@ -206,8 +219,9 @@ function KPICard({
           <p className="text-2xl font-bold" style={{ color: 'var(--g-text-primary)' }}>
             {value}
           </p>
-          <p className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+          <p className="text-xs flex items-center gap-1" style={{ color: 'var(--g-text-secondary)' }}>
             {label}
+            {helpTip && <InfoTip content={helpTip} side="bottom" />}
           </p>
         </div>
       </CardContent>

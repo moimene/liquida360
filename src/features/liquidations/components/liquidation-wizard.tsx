@@ -10,6 +10,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
+import { HelpText } from '@/components/ui/help-text'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { LIQUIDATIONS_HELP } from '../constants/help-texts'
 import {
   liquidationSchema,
   liquidationDefaultValues,
@@ -191,6 +194,7 @@ export function LiquidationWizard({
                 </span>
               )}
             </div>
+            <HelpText icon>{LIQUIDATIONS_HELP.wizardStep1}</HelpText>
 
             {/* Certificate status */}
             {selectedCorrespondentId && !loadingCerts && (
@@ -261,6 +265,7 @@ export function LiquidationWizard({
                     </option>
                   ))}
                 </Select>
+                <HelpText>{LIQUIDATIONS_HELP.wizardStep2Currency}</HelpText>
               </div>
             </div>
 
@@ -279,6 +284,7 @@ export function LiquidationWizard({
                   {errors.concept.message}
                 </span>
               )}
+              <HelpText>{LIQUIDATIONS_HELP.wizardStep2Concept}</HelpText>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -288,6 +294,7 @@ export function LiquidationWizard({
                 {...register('reference')}
                 placeholder="Nº factura, expediente..."
               />
+              <HelpText>{LIQUIDATIONS_HELP.wizardStep2Reference}</HelpText>
             </div>
           </div>
         )}
@@ -374,6 +381,7 @@ export function LiquidationWizard({
                 </span>
               </div>
             )}
+            <InfoPanel variant="tip" className="mt-2">{LIQUIDATIONS_HELP.wizardStep3}</InfoPanel>
           </div>
         )}
 

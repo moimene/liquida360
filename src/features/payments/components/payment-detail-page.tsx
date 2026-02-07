@@ -17,6 +17,9 @@ import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
+import { HelpText } from '@/components/ui/help-text'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { PAYMENTS_HELP } from '../constants/help-texts'
 import { usePaymentRequests } from '../hooks/use-payment-requests'
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { getPaymentStatusConfig } from '@/lib/payment-utils'
@@ -279,34 +282,12 @@ export function PaymentDetailPage() {
               )}
             </dl>
 
-            {/* Guidance */}
-            <div
-              className="mt-6 p-3 text-xs"
-              style={{
-                backgroundColor: 'var(--g-surface-muted)',
-                borderRadius: 'var(--g-radius-sm)',
-                color: 'var(--g-text-secondary)',
-              }}
-            >
-              {request.status === 'pending' && (
-                <p>
-                  Esta solicitud está pendiente. Inicia el proceso para indicar que estás trabajando
-                  en ella.
-                </p>
-              )}
-              {request.status === 'in_progress' && (
-                <p>
-                  La solicitud está en proceso. Cuando completes el pago, márcala como pagada con
-                  las notas pertinentes.
-                </p>
-              )}
-              {request.status === 'paid' && (
-                <p>Pago completado. La liquidación asociada también se ha actualizado.</p>
-              )}
-              {request.status === 'rejected' && (
-                <p>La solicitud ha sido rechazada. La liquidación permanece en estado aprobado.</p>
-              )}
-            </div>
+            <InfoPanel variant="info" className="mt-6">
+              {request.status === 'pending' && 'Esta solicitud está pendiente. Inicia el proceso para indicar que estás trabajando en ella.'}
+              {request.status === 'in_progress' && 'La solicitud está en proceso. Cuando completes el pago, márcala como pagada con las notas pertinentes.'}
+              {request.status === 'paid' && 'Pago completado. La liquidación asociada también se ha actualizado.'}
+              {request.status === 'rejected' && 'La solicitud ha sido rechazada. La liquidación permanece en estado aprobado.'}
+            </InfoPanel>
           </CardContent>
         </Card>
       </div>
@@ -371,6 +352,7 @@ export function PaymentDetailPage() {
                   : 'Motivo del rechazo...'
               }
             />
+            <HelpText icon>{PAYMENTS_HELP.notesField}</HelpText>
           </div>
         </div>
 

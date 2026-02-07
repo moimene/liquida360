@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { LIQUIDATIONS_HELP } from '../constants/help-texts'
 import { useLiquidations } from '../hooks/use-liquidations'
 import { useLiquidationsRealtime } from '../hooks/use-liquidations-realtime'
 import { useCorrespondents } from '@/features/correspondents'
@@ -58,6 +60,8 @@ export function LiquidationsPage() {
           Nueva liquidación
         </Button>
       </div>
+
+      <InfoPanel variant="info" dismissible dismissKey="liquidations-flow">{LIQUIDATIONS_HELP.pageInfoPanel}</InfoPanel>
 
       {/* Table */}
       <LiquidationsTable data={liquidations} loading={loading} />

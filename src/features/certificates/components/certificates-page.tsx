@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { CERTIFICATES_HELP } from '../constants/help-texts'
 import { useCertificates } from '../hooks/use-certificates'
 import { useCorrespondents } from '@/features/correspondents'
 import { CertificatesTable } from './certificates-table'
@@ -54,6 +56,8 @@ export function CertificatesPage() {
           Nuevo certificado
         </Button>
       </div>
+
+      <InfoPanel variant="info" dismissible dismissKey="certificates-info">{CERTIFICATES_HELP.pageInfoPanel}</InfoPanel>
 
       {/* Expiry alerts */}
       <ExpiryPanel certificates={certificates} />

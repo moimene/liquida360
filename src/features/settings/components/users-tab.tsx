@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { useUsers, type InternalUser } from '../hooks/use-users'
 import { useAuth } from '@/features/auth'
 import { InviteUserForm } from './invite-user-form'
@@ -17,6 +18,7 @@ import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { SETTINGS_HELP } from '../constants/help-texts'
 
 const ROLE_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
   admin: 'default',
@@ -144,6 +146,7 @@ export function UsersTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      <InfoPanel variant="info" dismissible dismissKey="settings-users">{SETTINGS_HELP.usersInfoPanel}</InfoPanel>
       <div className="flex items-center justify-between">
         <div>
           <h3

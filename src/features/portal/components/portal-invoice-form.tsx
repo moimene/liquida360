@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Upload, X } from 'lucide-react'
+import { HelpText } from '@/components/ui/help-text'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,6 +14,7 @@ import {
   portalInvoiceDefaultValues,
   type PortalInvoiceFormInput,
 } from '../schemas/portal-invoice-schema'
+import { PORTAL_HELP } from '../constants/help-texts'
 import { CURRENCIES } from '@/features/liquidations/schemas/liquidation-schema'
 
 interface PortalInvoiceFormProps {
@@ -88,6 +90,7 @@ export function PortalInvoiceForm({ open, onOpenChange, onSubmit }: PortalInvoic
               {errors.amount.message}
             </p>
           )}
+          <HelpText>{PORTAL_HELP.invoiceFormAmount}</HelpText>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -114,6 +117,7 @@ export function PortalInvoiceForm({ open, onOpenChange, onSubmit }: PortalInvoic
               {errors.concept.message}
             </p>
           )}
+          <HelpText>{PORTAL_HELP.invoiceFormConcept}</HelpText>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -124,6 +128,7 @@ export function PortalInvoiceForm({ open, onOpenChange, onSubmit }: PortalInvoic
             {...register('reference')}
             placeholder="Numero de factura, expediente, etc."
           />
+          <HelpText>{PORTAL_HELP.invoiceFormReference}</HelpText>
         </div>
 
         {/* File upload */}

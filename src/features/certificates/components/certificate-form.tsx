@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
+import { HelpText } from '@/components/ui/help-text'
+import { CERTIFICATES_HELP } from '../constants/help-texts'
 import {
   certificateSchema,
   certificateDefaultValues,
@@ -161,6 +163,7 @@ export function CertificateForm({
                 <span>{countryValidation.message}</span>
               </div>
             )}
+            <HelpText>{CERTIFICATES_HELP.formIssuingCountry}</HelpText>
           </div>
 
           {/* Dates */}
@@ -200,9 +203,7 @@ export function CertificateForm({
                 </span>
               )}
               {issueDate && (
-                <span className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>
-                  Por defecto: 1 año desde emisión
-                </span>
+                <HelpText>{CERTIFICATES_HELP.formDates}</HelpText>
               )}
             </div>
           </div>
@@ -238,6 +239,7 @@ export function CertificateForm({
                 }}
               />
             </div>
+            <HelpText>{CERTIFICATES_HELP.formFileUpload}</HelpText>
           </div>
         </div>
 

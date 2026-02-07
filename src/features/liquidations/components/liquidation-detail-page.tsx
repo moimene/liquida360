@@ -17,6 +17,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { InfoTip } from '@/components/ui/info-tip'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { LIQUIDATIONS_HELP } from '../constants/help-texts'
 import { useLiquidations } from '../hooks/use-liquidations'
 import { usePaymentRequests } from '@/features/payments/hooks/use-payment-requests'
 import { useAuth } from '@/features/auth/hooks/use-auth'
@@ -216,6 +219,10 @@ export function LiquidationDetailPage() {
       </div>
 
       {/* Status Timeline */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm font-medium" style={{ color: 'var(--g-text-secondary)' }}>Flujo de la liquidación</span>
+        <InfoTip content={LIQUIDATIONS_HELP.timelineHeader} side="right" />
+      </div>
       <StatusTimeline
         currentStatus={liquidation.status}
         isRejected={liquidation.status === 'rejected'}
@@ -315,41 +322,14 @@ export function LiquidationDetailPage() {
               )}
             </dl>
 
-            {/* Next steps guidance */}
-            <div
-              className="mt-6 p-3 text-xs"
-              style={{
-                backgroundColor: 'var(--g-surface-muted)',
-                borderRadius: 'var(--g-radius-sm)',
-                color: 'var(--g-text-secondary)',
-              }}
-            >
-              {liquidation.status === 'draft' && (
-                <p>Envía la liquidación para aprobación cuando esté lista.</p>
-              )}
-              {liquidation.status === 'pending_approval' && (
-                <p>Pendiente de que un supervisor apruebe o rechace la liquidación.</p>
-              )}
-              {liquidation.status === 'approved' && (
-                <p>
-                  Liquidación aprobada.{' '}
-                  {liquidation.certificate_id
-                    ? 'Puedes solicitar el pago al departamento financiero.'
-                    : 'Se necesita un certificado vigente para solicitar el pago.'}
-                </p>
-              )}
-              {liquidation.status === 'payment_requested' && (
-                <p>
-                  Solicitud de pago enviada al departamento financiero. Esperando procesamiento.
-                </p>
-              )}
-              {liquidation.status === 'paid' && (
-                <p>Pago completado. La liquidación está cerrada.</p>
-              )}
-              {liquidation.status === 'rejected' && (
-                <p>La liquidación ha sido rechazada. Puedes crear una nueva desde el listado.</p>
-              )}
-            </div>
+            <InfoPanel variant="info" className="mt-6">
+              {liquidation.status === 'draft' && 'Envía la liquidación para aprobación cuando esté lista.'}
+              {liquidation.status === 'pending_approval' && 'Pendiente de que un supervisor apruebe o rechace la liquidación.'}
+              {liquidation.status === 'approved' && (liquidation.certificate_id ? 'Liquidación aprobada. Puedes solicitar el pago al departamento financiero.' : 'Liquidación aprobada. Se necesita un certificado vigente para solicitar el pago.')}
+              {liquidation.status === 'payment_requested' && 'Solicitud de pago enviada al departamento financiero. Esperando procesamiento.'}
+              {liquidation.status === 'paid' && 'Pago completado. La liquidación está cerrada.'}
+              {liquidation.status === 'rejected' && 'La liquidación ha sido rechazada. Puedes crear una nueva desde el listado.'}
+            </InfoPanel>
           </CardContent>
         </Card>
       </div>

@@ -8,7 +8,10 @@ import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { HelpText } from '@/components/ui/help-text'
 import { useAuth } from '@/features/auth'
+import { PORTAL_HELP } from '../constants/help-texts'
 import { usePortalCorrespondent } from '../hooks/use-portal-correspondent'
 import { usePortalCertificates } from '../hooks/use-portal-certificates'
 import { getCertificateStatus, formatDate, getDefaultExpiryDate } from '@/lib/certificate-utils'
@@ -90,6 +93,10 @@ export function PortalCertificatesPage() {
           Nuevo certificado
         </Button>
       </div>
+
+      <InfoPanel variant="info" dismissible dismissKey="portal-certificates">
+        {PORTAL_HELP.certificatesPageInfo}
+      </InfoPanel>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -291,6 +298,7 @@ function CertificateUploadDialog({
               />
             </div>
           </div>
+          <HelpText>{PORTAL_HELP.certificateFormDates}</HelpText>
 
           <div className="flex flex-col gap-2">
             <Label>Documento (PDF, JPG, PNG)</Label>
@@ -344,6 +352,7 @@ function CertificateUploadDialog({
               className="hidden"
               aria-hidden="true"
             />
+            <HelpText>{PORTAL_HELP.certificateFormFile}</HelpText>
           </div>
 
           <DialogFooter className="mt-2 -mx-6 -mb-4">

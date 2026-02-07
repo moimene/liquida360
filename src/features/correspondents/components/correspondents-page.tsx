@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { InfoPanel } from '@/components/ui/info-panel'
+import { CORRESPONDENTS_HELP } from '../constants/help-texts'
 import { useCorrespondents } from '../hooks/use-correspondents'
 import { CorrespondentsTable } from './correspondents-table'
 import { CorrespondentForm } from './correspondent-form'
@@ -48,6 +50,8 @@ export function CorrespondentsPage() {
           Nuevo corresponsal
         </Button>
       </div>
+
+      <InfoPanel variant="info" dismissible dismissKey="correspondents-info">{CORRESPONDENTS_HELP.pageInfoPanel}</InfoPanel>
 
       {/* Table */}
       <CorrespondentsTable data={correspondents} loading={loading} />

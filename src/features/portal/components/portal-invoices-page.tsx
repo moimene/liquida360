@@ -15,7 +15,9 @@ import { Plus, Search, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { useAuth } from '@/features/auth'
+import { PORTAL_HELP } from '../constants/help-texts'
 import { usePortalCorrespondent } from '../hooks/use-portal-correspondent'
 import { usePortalLiquidations } from '../hooks/use-portal-liquidations'
 import { getStatusConfig, formatAmount } from '@/lib/liquidation-utils'
@@ -163,6 +165,10 @@ export function PortalInvoicesPage() {
           Nueva factura
         </Button>
       </div>
+
+      <InfoPanel variant="info" dismissible dismissKey="portal-invoices">
+        {PORTAL_HELP.invoicesPageInfo}
+      </InfoPanel>
 
       {/* Search */}
       <div className="relative max-w-sm">

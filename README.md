@@ -17,6 +17,7 @@ Plataforma de gestion de liquidaciones de pagos para despachos de abogados. Gest
 | **Routing** | React Router 7 |
 | **Formularios** | React Hook Form + Zod 4 |
 | **Tablas** | TanStack Table 8 |
+| **Graficos** | Recharts 3 |
 | **Notificaciones** | Sonner |
 | **Fechas** | date-fns |
 | **Iconos** | Lucide React |
@@ -33,20 +34,23 @@ src/
   assets/                 # Recursos estaticos
   components/
     layout/               # AppLayout, PortalLayout, Sidebar, PortalHeader
-    ui/                   # Componentes base (Button, Input, Dialog, Badge, Card...)
+    ui/                   # 14 componentes (Button, Input, Dialog, SortButton, EmptyState,
+                          #   DateRangeFilter, TableToolbar, Breadcrumbs, CommandPalette...)
   features/
     auth/                 # Login, registro, guards (ProtectedRoute, PortalRoute)
     certificates/         # Certificados de residencia fiscal
     correspondents/       # Gestion de corresponsales
-    dashboard/            # Dashboard principal con KPIs
-    liquidations/         # Liquidaciones y flujo de aprobacion
+    dashboard/            # Dashboard con KPIs + 3 graficos (Recharts)
+      components/charts/  # LiquidationTrendChart, LiquidationStatusChart, CertificateExpiryChart
+    liquidations/         # Liquidaciones, flujo de aprobacion, realtime
     notifications/        # Centro de notificaciones (Realtime)
-    payments/             # Solicitudes de pago al Dpto. Financiero
+    payments/             # Solicitudes de pago al Dpto. Financiero, realtime
     portal/               # Portal de autoservicio para corresponsales
-  lib/                    # Utilidades, constantes, cliente Supabase
+    settings/             # Configuracion (admin): alertas, usuarios, general
+  lib/                    # Utilidades, Supabase client, csv-export, search-index
   styles/                 # Tokens CSS del Design System
   types/                  # Tipos globales (UserRole, Database, entidades)
-  __tests__/              # 79 unit tests
+  __tests__/              # 120 unit tests
 
 supabase/
   migrations/             # 3 migraciones SQL (schema + RLS + portal)
@@ -62,6 +66,7 @@ supabase/
 - **Domain-driven**: Cada feature agrupa components, hooks, schemas
 - **Row-Level Security (RLS)**: Todas las tablas protegidas por rol
 - **Code splitting**: `React.lazy()` en todas las rutas
+- **Realtime**: Suscripciones Supabase en liquidaciones y pagos (actualizacion instantanea)
 - **WCAG AA**: Contraste 4.5:1, ARIA, skip-to-content
 - **Zero `any`**: TypeScript estricto en todo el proyecto
 
@@ -154,13 +159,18 @@ Debajo, dos paneles:
 - **Liquidaciones recientes** (2/3): Lista de las 5 ultimas con corresponsal, fecha, estado y monto. Clic navega al detalle.
 - **Alertas de certificados** (1/3): Si hay certificados vencidos o proximos a vencer, muestra alertas con colores rojo/amarillo y link a gestion.
 
+Seccion de graficos interactivos (Recharts):
+- **Tendencia mensual** (barras): Importe total de liquidaciones por mes, tooltips con formato moneda.
+- **Distribucion por estado** (donut): Desglose visual de liquidaciones por estado (borrador, pendiente, aprobada, pagada, rechazada) con leyenda y colores por status.
+- **Certificados por vencer** (barras horizontales): Los 8 certificados con vencimiento mas proximo en los proximos 90 dias. Color por urgencia: verde >60d, amarillo 30-60d, rojo <30d. Si no hay vencimientos, muestra estado vacio positivo.
+
 #### Corresponsales — Lista (`/correspondents`)
 
-Tabla con buscador y paginacion. Columnas: nombre, pais, NIF, email, estado (badge color), acciones. Boton "Nuevo corresponsal" abre un dialog modal con formulario completo (nombre, pais, NIF, direccion, email, telefono).
+Tabla con toolbar avanzado (buscador, filtro por estado, exportar CSV, contador de registros) y paginacion. Columnas: nombre, pais, NIF, email, estado (badge color), acciones. Boton "Nuevo corresponsal" abre un dialog modal con formulario completo (nombre, pais, NIF, direccion, email, telefono).
 
 #### Corresponsales — Detalle (`/correspondents/:id`)
 
-Cabecera con nombre, badge de estado y badge de vinculacion al portal. Tres pestanas:
+Breadcrumbs de navegacion: Inicio > Corresponsales > nombre. Cabecera con nombre, badge de estado y badge de vinculacion al portal. Tres pestanas:
 - **Datos**: Ficha readonly con todos los campos del corresponsal
 - **Certificados**: Lista de certificados de residencia fiscal con fechas y estados
 - **Pagos**: Historico de liquidaciones asociadas
@@ -172,7 +182,7 @@ Acciones contextuales (solo admin):
 
 #### Certificados (`/certificates`)
 
-Panel de alertas en la parte superior (rojo: vencidos, amarillo: por vencer). Tabla con columnas: corresponsal, pais emisor, fecha vencimiento, estado (badge). Boton "Nuevo certificado" abre un wizard:
+Panel de alertas en la parte superior (rojo: vencidos, amarillo: por vencer). Tabla con toolbar avanzado (buscador, filtro por estado, exportar CSV) y columnas: corresponsal, pais emisor, fecha vencimiento, estado (badge). Boton "Nuevo certificado" abre un wizard:
 1. Seleccionar corresponsal (dropdown)
 2. Pais emisor (dropdown)
 3. Fecha de emision (datepicker)
@@ -181,7 +191,7 @@ Panel de alertas en la parte superior (rojo: vencidos, amarillo: por vencer). Ta
 
 #### Liquidaciones — Lista (`/liquidations`)
 
-Tabla con columnas: corresponsal, concepto, importe, divisa, estado, fecha. Boton "Nueva liquidacion" abre un wizard de 3 pasos:
+Tabla con toolbar avanzado (buscador, filtro por estado, filtro por rango de fechas, exportar CSV, contador de registros) y actualizacion en tiempo real via Supabase Realtime. Columnas: corresponsal, concepto, importe, divisa, estado, fecha. Boton "Nueva liquidacion" abre un wizard de 3 pasos:
 
 **Paso 1 — Corresponsal**: Dropdown de corresponsales activos. Al seleccionar, muestra tarjeta con estado del certificado (vigente con dias restantes, vencido, o sin certificado).
 
@@ -191,7 +201,7 @@ Tabla con columnas: corresponsal, concepto, importe, divisa, estado, fecha. Boto
 
 #### Liquidaciones — Detalle (`/liquidations/:id`)
 
-Cabecera con importe formateado, badge de estado, nombre del corresponsal. **Timeline visual de 5 pasos**: Borrador → Pendiente aprobacion → Aprobada → Pago solicitado → Pagada. Circulos numerados con lineas conectoras. Si rechazada, muestra X roja.
+Breadcrumbs de navegacion: Inicio > Liquidaciones > #referencia. Cabecera con importe formateado, badge de estado, nombre del corresponsal. **Timeline visual de 5 pasos**: Borrador → Pendiente aprobacion → Aprobada → Pago solicitado → Pagada. Circulos numerados con lineas conectoras. Si rechazada, muestra X roja.
 
 Botones de accion segun rol y estado:
 - Borrador + Pagador/Admin → "Enviar a aprobacion"
@@ -202,11 +212,11 @@ Dos tarjetas de detalle: datos de la liquidacion (izquierda) e informacion de pr
 
 #### Pagos — Cola (`/payments`)
 
-Accesible solo para financiero y admin. Cuatro tarjetas de estadisticas: pendientes, en proceso, pagadas, rechazadas. Tabla de solicitudes de pago con columnas: corresponsal, liquidacion, importe, estado, fecha solicitud, fecha procesamiento.
+Accesible solo para financiero y admin. Actualizacion en tiempo real via Supabase Realtime. Cuatro tarjetas de estadisticas: pendientes, en proceso, pagadas, rechazadas. Tabla con toolbar avanzado (buscador, filtro por estado, rango de fechas, exportar CSV) y columnas: corresponsal, liquidacion, importe, estado, fecha solicitud, fecha procesamiento.
 
 #### Pagos — Detalle (`/payments/:id`)
 
-Cabecera con titulo, badge de estado y corresponsal. Botones contextuales:
+Breadcrumbs de navegacion: Inicio > Pagos > Solicitud #id. Cabecera con titulo, badge de estado y corresponsal. Botones contextuales:
 - Pendiente → "Iniciar proceso"
 - En proceso → "Marcar como pagada" / "Rechazar"
 
@@ -440,6 +450,40 @@ CORRESPONSAL (portal)          PAGADOR (interno)         FINANCIERO
 
 ---
 
+## UX Avanzada
+
+### Busqueda global (Command Palette)
+
+Atajo `Cmd+K` / `Ctrl+K` abre una paleta de busqueda global que permite buscar corresponsales, liquidaciones, certificados y pagos desde cualquier pantalla. Navegacion con flechas y Enter. Resultados agrupados por tipo con iconos y subtitulos.
+
+### Exportacion CSV
+
+Todas las tablas principales (liquidaciones, pagos, certificados, corresponsales) incluyen boton de exportacion CSV. El archivo generado:
+- Incluye BOM para compatibilidad con Excel y acentos
+- Escapa correctamente comillas y comas
+- Headers en espanol con accessors formateados
+
+### Toolbar estandarizado
+
+Todas las tablas usan un `TableToolbar` compartido que integra: buscador con icono, filtro por estado (select), filtro por rango de fechas (2 date inputs), boton de exportar CSV y contador de registros.
+
+### Componentes compartidos
+
+| Componente | Uso |
+|------------|-----|
+| `SortButton` | Boton de ordenacion extraido y reutilizado en las 4 tablas principales |
+| `EmptyState` | Estado vacio reutilizable con icono, titulo, descripcion y CTA opcional |
+| `DateRangeFilter` | Filtro de rango de fechas con validacion (`to >= from`) |
+| `TableToolbar` | Barra de herramientas completa para tablas |
+| `Breadcrumbs` | Navegacion breadcrumb accesible (`aria-label`, `aria-current`) |
+| `CommandPalette` | Paleta de busqueda global con `<dialog>` nativo |
+
+### Realtime
+
+Las tablas de liquidaciones y pagos se actualizan automaticamente via suscripciones Supabase Realtime (`postgres_changes`). Cualquier INSERT, UPDATE o DELETE en la base de datos se refleja instantaneamente sin recargar la pagina.
+
+---
+
 ## Comandos
 
 ```bash
@@ -449,8 +493,14 @@ npm run dev
 # Build (TypeScript + Vite)
 npm run build
 
-# Tests (79 tests)
+# Tests (120 tests)
 npm test
+
+# Tests con watch
+npm run test:watch
+
+# Tests con coverage
+npm run test:coverage
 
 # Lint
 npm run lint
@@ -548,11 +598,14 @@ supabase functions deploy approve-correspondent --no-verify-jwt
 
 | Metrica | Valor |
 |---------|-------|
-| Archivos TS/TSX | 92 |
-| Feature modules | 8 |
-| Unit tests | 79 |
+| Archivos TS/TSX | 120 |
+| Feature modules | 9 |
+| Componentes UI compartidos | 14 |
+| Graficos dashboard (Recharts) | 3 |
+| Unit tests | 120 |
 | Edge Functions | 4 |
 | Migraciones SQL | 3 |
 | Roles de usuario | 5 |
 | Rutas totales | 17 |
-| Build time | ~1.7s |
+| Suscripciones Realtime | 2 (liquidaciones, pagos) |
+| Build time | ~2.2s |

@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { InfoTip } from '@/components/ui/info-tip'
 import { useAuth } from '@/features/auth'
 import { useNotifications } from '@/features/notifications/hooks/use-notifications'
+import { NOTIFICATIONS_HELP } from '@/features/notifications/constants/help-texts'
 import { formatRelativeTime, getNotificationIcon } from '@/lib/notification-utils'
 
 export function PortalNotificationsPage() {
@@ -43,10 +45,11 @@ export function PortalNotificationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1
-            className="font-bold"
+            className="font-bold flex items-center gap-2"
             style={{ fontSize: 'var(--g-text-h2)', color: 'var(--g-text-primary)' }}
           >
             Notificaciones
+            <InfoTip content={NOTIFICATIONS_HELP.portalHeaderTip} side="bottom" />
           </h1>
           <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
             {unreadCount > 0

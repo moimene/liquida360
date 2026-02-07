@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { InfoTip } from '@/components/ui/info-tip'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { Clock, Receipt, FileCheck, AlertTriangle, CreditCard, Eye } from 'lucide-react'
+import { DASHBOARD_HELP } from '../constants/help-texts'
 import { useLiquidations } from '@/features/liquidations/hooks/use-liquidations'
 import { useCertificates } from '@/features/certificates/hooks/use-certificates'
 import { usePaymentRequests } from '@/features/payments/hooks/use-payment-requests'
@@ -83,6 +86,7 @@ export function DashboardPage() {
           icon={Receipt}
           variant={stats.pendingLiquidations > 0 ? 'warning' : undefined}
           badgeLabel={stats.pendingLiquidations > 0 ? 'Pendientes' : undefined}
+          helpText={DASHBOARD_HELP.kpiPendingLiquidations}
         />
         <MetricCard
           title="Certificados vigentes"
@@ -91,6 +95,7 @@ export function DashboardPage() {
           variant="success"
           badgeLabel="Vigentes"
           subtext={`${stats.totalCertificates} total`}
+          helpText={DASHBOARD_HELP.kpiValidCertificates}
         />
         <MetricCard
           title="Certificados por vencer"
@@ -99,6 +104,7 @@ export function DashboardPage() {
           variant={stats.expiringCerts + stats.expiredCerts > 0 ? 'destructive' : undefined}
           badgeLabel={stats.expiringCerts + stats.expiredCerts > 0 ? 'Urgente' : undefined}
           subtext={stats.expiredCerts > 0 ? `${stats.expiredCerts} vencidos` : undefined}
+          helpText={DASHBOARD_HELP.kpiExpiringCertificates}
         />
         {role === 'financiero' || role === 'admin' ? (
           <MetricCard
@@ -107,6 +113,7 @@ export function DashboardPage() {
             icon={CreditCard}
             variant={stats.pendingPayments > 0 ? 'warning' : undefined}
             badgeLabel={stats.pendingPayments > 0 ? 'En cola' : undefined}
+            helpText={DASHBOARD_HELP.kpiPendingPayments}
           />
         ) : (
           <MetricCard
@@ -114,12 +121,15 @@ export function DashboardPage() {
             value={loading ? '—' : String(stats.approvedLiquidations)}
             icon={Clock}
             subtext="Liquidaciones en proceso"
+            helpText={DASHBOARD_HELP.kpiInApproval}
           />
         )}
       </div>
 
       {/* Charts */}
       {!loading && (
+        <>
+        <InfoPanel variant="tip" dismissible dismissKey="dashboard-charts" className="mb-2">{DASHBOARD_HELP.chartsSection}</InfoPanel>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
           <LiquidationTrendChart liquidations={liquidations} />
           <LiquidationStatusChart liquidations={liquidations} />
@@ -127,6 +137,7 @@ export function DashboardPage() {
             <CertificateExpiryChart certificates={certificates} />
           </div>
         </div>
+        </>
       )}
 
       {/* Content Grid */}
@@ -208,7 +219,7 @@ export function DashboardPage() {
         {/* Certificate Alerts */}
         <Card>
           <CardHeader>
-            <CardTitle>Alertas de certificados</CardTitle>
+            <CardTitle className="flex items-center gap-2">Alertas de certificados <InfoTip content={DASHBOARD_HELP.certificateAlerts} side="bottom" /></CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -289,6 +300,7 @@ function MetricCard({
   subtext,
   variant,
   badgeLabel,
+  helpText,
 }: {
   title: string
   value: string
@@ -296,14 +308,15 @@ function MetricCard({
   subtext?: string
   variant?: 'success' | 'warning' | 'destructive'
   badgeLabel?: string
+  helpText?: string
 }) {
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium" style={{ color: 'var(--g-text-secondary)' }}>
-              {title}
+            <p className="text-sm font-medium flex items-center gap-1" style={{ color: 'var(--g-text-secondary)' }}>
+              {title}{helpText && <InfoTip content={helpText} side="bottom" />}
             </p>
             <p
               className="mt-2 font-bold"

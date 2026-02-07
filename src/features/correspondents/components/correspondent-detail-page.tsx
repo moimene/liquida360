@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
+import { InfoTip } from '@/components/ui/info-tip'
+import { CORRESPONDENTS_HELP } from '../constants/help-texts'
 import { useCorrespondents } from '../hooks/use-correspondents'
 import { CorrespondentForm } from './correspondent-form'
 import { CorrespondentCertificatesTab } from '@/features/certificates'
@@ -115,6 +117,12 @@ export function CorrespondentDetailPage() {
         </Button>
       </div>
     )
+  }
+
+  const tabHelpTexts: Record<TabId, string> = {
+    datos: CORRESPONDENTS_HELP.tabDatos,
+    certificados: CORRESPONDENTS_HELP.tabCertificados,
+    pagos: CORRESPONDENTS_HELP.tabPagos,
   }
 
   const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
@@ -259,6 +267,7 @@ export function CorrespondentDetailPage() {
             >
               <Icon className="h-4 w-4" />
               {tab.label}
+              {isActive && <InfoTip content={tabHelpTexts[tab.id]} side="bottom" />}
             </button>
           )
         })}

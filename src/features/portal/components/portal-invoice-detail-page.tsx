@@ -5,7 +5,9 @@ import { ArrowLeft, Send, FileText, CreditCard, Download, Check, X, XCircle } fr
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { useAuth } from '@/features/auth'
+import { PORTAL_HELP } from '../constants/help-texts'
 import { usePortalCorrespondent } from '../hooks/use-portal-correspondent'
 import { usePortalLiquidations } from '../hooks/use-portal-liquidations'
 import { getStatusConfig, formatAmount, STATUS_TIMELINE } from '@/lib/liquidation-utils'
@@ -103,6 +105,10 @@ export function PortalInvoiceDetailPage() {
         </div>
       </div>
 
+      <InfoPanel variant="tip" className="mb-4">
+        {PORTAL_HELP.invoiceDetailWorkflow}
+      </InfoPanel>
+
       {/* Status Timeline (readonly) */}
       <PortalStatusTimeline
         currentStatus={liquidation.status}
@@ -177,14 +183,7 @@ export function PortalInvoiceDetailPage() {
             )}
 
             {/* Status guidance */}
-            <div
-              className="mt-6 p-3 text-xs"
-              style={{
-                backgroundColor: 'var(--g-surface-muted)',
-                borderRadius: 'var(--g-radius-sm)',
-                color: 'var(--g-text-secondary)',
-              }}
-            >
+            <InfoPanel variant="info" className="mt-6">
               {liquidation.status === 'draft' && (
                 <p>Tu factura esta en borrador. Enviala a aprobacion cuando este lista.</p>
               )}
@@ -201,7 +200,7 @@ export function PortalInvoiceDetailPage() {
               {liquidation.status === 'rejected' && (
                 <p>Tu factura ha sido rechazada. Contacta con el equipo para mas informacion.</p>
               )}
-            </div>
+            </InfoPanel>
           </CardContent>
         </Card>
       </div>

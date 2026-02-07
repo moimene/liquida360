@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { useAlertConfigs } from '../hooks/use-alert-configs'
 import { useAuth } from '@/features/auth'
 import { AlertConfigForm } from './alert-config-form'
@@ -16,6 +17,7 @@ import { ALERT_TYPE_OPTIONS, type AlertConfigFormData } from '../schemas/setting
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AlertConfig } from '@/types'
+import { SETTINGS_HELP } from '../constants/help-texts'
 
 export function AlertConfigsTab() {
   const user = useAuth((s) => s.user)
@@ -153,6 +155,7 @@ export function AlertConfigsTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      <InfoPanel variant="info" dismissible dismissKey="settings-alerts">{SETTINGS_HELP.alertsInfoPanel}</InfoPanel>
       <div className="flex items-center justify-between">
         <div>
           <h3

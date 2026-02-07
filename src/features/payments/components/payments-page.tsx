@@ -1,8 +1,11 @@
 import { useEffect, useMemo } from 'react'
 import { Clock, CheckCircle2, Loader2, XCircle } from 'lucide-react'
+import { InfoTip } from '@/components/ui/info-tip'
+import { InfoPanel } from '@/components/ui/info-panel'
 import { usePaymentRequests } from '../hooks/use-payment-requests'
 import { usePaymentsRealtime } from '../hooks/use-payments-realtime'
 import { PaymentsTable } from './payments-table'
+import { PAYMENTS_HELP } from '../constants/help-texts'
 
 export function PaymentsPage() {
   const { requests, loading, fetchRequests } = usePaymentRequests()
@@ -37,6 +40,8 @@ export function PaymentsPage() {
         </p>
       </div>
 
+      <InfoPanel variant="info" dismissible dismissKey="payments-flow">{PAYMENTS_HELP.pageInfoPanel}</InfoPanel>
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
@@ -44,24 +49,28 @@ export function PaymentsPage() {
           value={stats.pending}
           icon={Clock}
           color="var(--status-warning)"
+          helpText={PAYMENTS_HELP.statPending}
         />
         <StatCard
           label="En proceso"
           value={stats.inProgress}
           icon={Loader2}
           color="var(--g-brand-3308)"
+          helpText={PAYMENTS_HELP.statInProgress}
         />
         <StatCard
           label="Pagadas"
           value={stats.paid}
           icon={CheckCircle2}
           color="var(--status-success)"
+          helpText={PAYMENTS_HELP.statPaid}
         />
         <StatCard
           label="Rechazadas"
           value={stats.rejected}
           icon={XCircle}
           color="var(--status-error)"
+          helpText={PAYMENTS_HELP.statRejected}
         />
       </div>
 
@@ -76,11 +85,13 @@ function StatCard({
   value,
   icon: Icon,
   color,
+  helpText,
 }: {
   label: string
   value: number
   icon: React.ElementType
   color: string
+  helpText?: string
 }) {
   return (
     <div
@@ -105,10 +116,10 @@ function StatCard({
           {value}
         </p>
         <p
-          className="text-xs font-medium uppercase tracking-wider"
+          className="text-xs font-medium uppercase tracking-wider flex items-center gap-1"
           style={{ color: 'var(--g-text-secondary)' }}
         >
-          {label}
+          {label}{helpText && <InfoTip content={helpText} side="bottom" />}
         </p>
       </div>
     </div>
