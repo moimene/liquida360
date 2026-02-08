@@ -17,7 +17,7 @@ import { TableToolbar } from '@/components/ui/table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { type DateRange, filterByDateRange } from '@/components/ui/date-range-filter'
 import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
-import { ChevronLeft, ChevronRight, Eye, Receipt } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Eye, Receipt, FileText } from 'lucide-react'
 import { getStatusConfig, formatAmount } from '@/lib/liquidation-utils'
 import { formatDate } from '@/lib/certificate-utils'
 import { useNavigate } from 'react-router-dom'
@@ -112,6 +112,27 @@ export function LiquidationsTable({ data, loading }: LiquidationsTableProps) {
         accessorKey: 'created_at',
         header: ({ column }) => <SortButton column={column}>Fecha</SortButton>,
         cell: ({ row }) => formatDate(row.getValue('created_at')),
+      },
+      {
+        id: 'invoice',
+        header: '',
+        cell: ({ row }) => {
+          if (!row.original.invoice_url) return null
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(row.original.invoice_url!, '_blank')
+              }}
+              aria-label="Ver factura"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          )
+        },
+        enableSorting: false,
       },
       {
         id: 'actions',

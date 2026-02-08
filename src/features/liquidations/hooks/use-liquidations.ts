@@ -14,6 +14,7 @@ interface LiquidationsState {
     data: LiquidationFormData,
     userId: string,
     certificateId?: string,
+    file?: File,
   ) => Promise<{ data: Liquidation | null; error: string | null }>
   linkCertificate: (
     liquidationId: string,
@@ -58,7 +59,26 @@ export const useLiquidations = create<LiquidationsState>((set, get) => ({
     }
   },
 
-  createLiquidation: async (formData, userId, certificateId) => {
+  createLiquidation: async (formData, userId, certificateId, file) => {
+    let invoiceUrl: string | null = null
+
+    // Upload invoice file if provided
+    if (file) {
+      const fileExt = file.name.split('.').pop()
+      const filePath = `invoices/${formData.correspondent_id}/${Date.now()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('invoices')
+        .upload(filePath, file)
+
+      if (uploadError) {
+        return { data: null, error: `Error al subir factura: ${uploadError.message}` }
+      }
+
+      const { data: urlData } = supabase.storage.from('invoices').getPublicUrl(filePath)
+      invoiceUrl = urlData.publicUrl
+    }
+
     const { data, error } = await supabase
       .from('liquidations')
       .insert({
@@ -67,6 +87,7 @@ export const useLiquidations = create<LiquidationsState>((set, get) => ({
         currency: formData.currency,
         concept: formData.concept,
         reference: formData.reference || null,
+        invoice_url: invoiceUrl,
         certificate_id: certificateId ?? null,
         created_by: userId,
         status: 'draft',

@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ArrowRight, Check, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, AlertTriangle, Upload, FileText, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +32,7 @@ interface LiquidationWizardProps {
   onSubmit: (data: LiquidationFormData, certificateId?: string) => Promise<void>
   correspondents: Correspondent[]
   loading?: boolean
+  onFileSelect: (file: File | undefined) => void
 }
 
 const STEPS = ['Corresponsal', 'Datos', 'Confirmar'] as const
@@ -42,10 +43,13 @@ export function LiquidationWizard({
   onSubmit,
   correspondents,
   loading,
+  onFileSelect,
 }: LiquidationWizardProps) {
   const [step, setStep] = useState(0)
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [loadingCerts, setLoadingCerts] = useState(false)
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -120,7 +124,16 @@ export function LiquidationWizard({
   function handleClose() {
     reset()
     setStep(0)
+    setSelectedFileName(null)
+    onFileSelect(undefined)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     onClose()
+  }
+
+  function handleRemoveFile() {
+    setSelectedFileName(null)
+    onFileSelect(undefined)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   return (
@@ -296,6 +309,70 @@ export function LiquidationWizard({
               />
               <HelpText>{LIQUIDATIONS_HELP.wizardStep2Reference}</HelpText>
             </div>
+
+            {/* Invoice file upload */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="invoice">Factura (PDF, imagen)</Label>
+              {selectedFileName ? (
+                <div
+                  className="flex items-center gap-3 p-3"
+                  style={{
+                    border: '1px solid var(--g-border-default)',
+                    borderRadius: 'var(--g-radius-md)',
+                    backgroundColor: 'var(--g-surface-secondary)',
+                  }}
+                >
+                  <FileText className="h-5 w-5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                  <span
+                    className="text-sm flex-1 truncate"
+                    style={{ color: 'var(--g-text-primary)' }}
+                    title={selectedFileName}
+                  >
+                    {selectedFileName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="shrink-0 p-1 rounded transition-colors"
+                    style={{ color: 'var(--g-text-secondary)' }}
+                    aria-label="Eliminar archivo seleccionado"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center gap-3 p-3 cursor-pointer transition-colors"
+                  style={{
+                    border: '1px dashed var(--g-border-subtle)',
+                    borderRadius: 'var(--g-radius-md)',
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Subir factura"
+                >
+                  <Upload className="h-5 w-5" style={{ color: 'var(--g-text-secondary)' }} />
+                  <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+                    Haz clic para seleccionar archivo
+                  </span>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                id="invoice"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  setSelectedFileName(file?.name ?? null)
+                  onFileSelect(file)
+                }}
+              />
+              <HelpText>{LIQUIDATIONS_HELP.wizardStep2Invoice}</HelpText>
+            </div>
           </div>
         )}
 
@@ -347,6 +424,26 @@ export function LiquidationWizard({
                       </div>
                     </>
                   )}
+                  <div className="border-t" style={{ borderColor: 'var(--g-border-default)' }} />
+                  <div className="flex justify-between items-center">
+                    <dt className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+                      Factura
+                    </dt>
+                    <dd className="flex items-center gap-1.5">
+                      {selectedFileName ? (
+                        <>
+                          <FileText className="h-3.5 w-3.5" style={{ color: 'var(--g-brand-3308)' }} />
+                          <span className="text-sm" style={{ color: 'var(--g-text-primary)' }}>
+                            {selectedFileName}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+                          Sin factura adjunta
+                        </span>
+                      )}
+                    </dd>
+                  </div>
                   <div className="border-t" style={{ borderColor: 'var(--g-border-default)' }} />
                   <div className="flex justify-between items-center">
                     <dt className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>

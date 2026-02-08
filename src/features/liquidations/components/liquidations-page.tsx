@@ -18,6 +18,7 @@ export function LiquidationsPage() {
   const user = useAuth((s) => s.user)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | undefined>()
 
   // Realtime subscription for live updates
   useLiquidationsRealtime()
@@ -30,8 +31,9 @@ export function LiquidationsPage() {
   async function handleCreate(data: LiquidationFormData, certificateId?: string) {
     if (!user) return
     setSubmitting(true)
-    const { error } = await createLiquidation(data, user.id, certificateId)
+    const { error } = await createLiquidation(data, user.id, certificateId, selectedFile)
     setSubmitting(false)
+    setSelectedFile(undefined)
 
     if (error) {
       toast.error('Error al crear liquidación', { description: error })
@@ -69,10 +71,14 @@ export function LiquidationsPage() {
       {/* Wizard */}
       <LiquidationWizard
         open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
+        onClose={() => {
+          setWizardOpen(false)
+          setSelectedFile(undefined)
+        }}
         onSubmit={handleCreate}
         correspondents={correspondents}
         loading={submitting}
+        onFileSelect={setSelectedFile}
       />
     </div>
   )

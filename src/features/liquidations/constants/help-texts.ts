@@ -7,6 +7,7 @@ export const LIQUIDATIONS_HELP = {
     'Describe el servicio prestado. Este texto aparecerá en la solicitud al departamento financiero.',
   wizardStep2Currency: 'Selecciona la divisa del pago. Por defecto EUR.',
   wizardStep2Reference: 'Número de factura o referencia interna. Campo opcional.',
+  wizardStep2Invoice: 'Adjunta la factura del corresponsal (PDF o imagen). Podrás descargarla desde el detalle de la liquidación.',
   wizardStep3:
     'Se creará como borrador. Podrás enviarla a aprobación desde el detalle.',
   timelineHeader:
