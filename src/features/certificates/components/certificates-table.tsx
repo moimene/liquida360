@@ -16,7 +16,7 @@ import { SortButton } from '@/components/ui/sort-button'
 import { TableToolbar } from '@/components/ui/table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { exportTableToCsv, csvFilename, type CsvColumn } from '@/lib/csv-export'
-import { ChevronLeft, ChevronRight, ExternalLink, FileCheck } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, FileCheck, Stamp } from 'lucide-react'
 import { getCertificateStatus, formatDate } from '@/lib/certificate-utils'
 import { COUNTRIES } from '@/lib/countries'
 
@@ -47,6 +47,7 @@ const csvColumns: CsvColumn<Certificate>[] = [
   { header: 'Emisión', accessor: (row) => formatDate(row.issue_date) },
   { header: 'Vencimiento', accessor: (row) => formatDate(row.expiry_date) },
   { header: 'Estado', accessor: (row) => getCertificateStatus(row.expiry_date).label },
+  { header: 'Apostillado', accessor: (row) => row.apostilled ? 'Sí' : 'No' },
 ]
 
 export function CertificatesTable({ data, loading }: CertificatesTableProps) {
@@ -92,6 +93,22 @@ export function CertificatesTable({ data, loading }: CertificatesTableProps) {
           const info = getCertificateStatus(row.original.expiry_date)
           return <Badge variant={info.badgeVariant}>{info.label}</Badge>
         },
+      },
+      {
+        accessorKey: 'apostilled',
+        header: 'Apostilla',
+        cell: ({ row }) => {
+          const apostilled = row.original.apostilled
+          return apostilled ? (
+            <span className="inline-flex items-center gap-1" style={{ color: 'var(--g-status-success)' }}>
+              <Stamp className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Si</span>
+            </span>
+          ) : (
+            <span className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>—</span>
+          )
+        },
+        enableSorting: false,
       },
       {
         id: 'document',

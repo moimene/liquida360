@@ -15,14 +15,17 @@ import {
   Lock,
   Search,
   Lightbulb,
+  Scale,
 } from 'lucide-react'
 import {
   TIER_INFO,
+  APOSTILLE_INFO,
   VERIFICATION_PROTOCOLS,
   REGION_LABELS,
   getCountriesByRegion,
   getTierCount,
   type VerificationTier,
+  type ApostilleRequirement,
   type Region,
   type CountryVerification,
   type ProtocolInfo,
@@ -64,6 +67,19 @@ function SecurityBadge({ level }: { level: 'alta' | 'media' | 'baja' }) {
       style={{ backgroundColor: c.bg, color: c.fg, borderRadius: 'var(--g-radius-sm)' }}
     >
       {level}
+    </span>
+  )
+}
+
+function ApostilleBadge({ requirement }: { requirement: ApostilleRequirement }) {
+  const info = APOSTILLE_INFO[requirement]
+  return (
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium whitespace-nowrap"
+      style={{ backgroundColor: info.colorBg, color: info.colorFg, borderRadius: 'var(--g-radius-sm)' }}
+    >
+      <Stamp className="h-3 w-3" />
+      {info.shortLabel}
     </span>
   )
 }
@@ -126,6 +142,7 @@ function RegionTable({ region, icon: Icon }: { region: Region; icon: React.Eleme
             <tr>
               <Th>Pais</Th>
               <Th width="80px">Cat.</Th>
+              <Th>Apostilla</Th>
               <Th>Autoridad</Th>
               <Th>Metodo de verificacion</Th>
               <Th>URL</Th>
@@ -153,6 +170,9 @@ function CountryRow({ country }: { country: CountryVerification }) {
       </Td>
       <Td>
         <TierBadge tier={country.tier} />
+      </Td>
+      <Td>
+        <ApostilleBadge requirement={country.apostilleRequirement} />
       </Td>
       <Td>
         <span style={{ fontSize: 'var(--g-text-small)' }}>{country.taxAuthority}</span>
@@ -397,6 +417,181 @@ export function VerificationGuidePage() {
       <RegionTable region="north_america" icon={Globe} />
       <RegionTable region="asia_pacific" icon={Globe} />
       <RegionTable region="europe" icon={Globe} />
+
+      {/* ── AEAT / Spain criteria ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scale className="h-5 w-5" style={{ color: 'var(--g-brand-3308)' }} />
+            Criterio AEAT y jurisprudencia espanola sobre apostilla
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
+            Criterios aplicables a la aceptacion de certificados de residencia fiscal por parte de la
+            Agencia Estatal de Administracion Tributaria (AEAT) en el contexto de convenios de doble
+            imposicion (CDI).
+          </p>
+
+          {/* Apostille legend */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(['not_required', 'recommended', 'strongly_recommended'] as ApostilleRequirement[]).map((req) => {
+              const info = APOSTILLE_INFO[req]
+              return (
+                <div
+                  key={req}
+                  className="p-3 flex items-start gap-2"
+                  style={{ backgroundColor: info.colorBg, borderRadius: 'var(--g-radius-md)' }}
+                >
+                  <Stamp className="h-4 w-4 mt-0.5 shrink-0" style={{ color: info.colorFg }} />
+                  <div>
+                    <p className="font-medium" style={{ fontSize: 'var(--g-text-small)', color: info.colorFg }}>
+                      {info.label}
+                    </p>
+                    <p style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                      {info.description}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* AEAT CSV system */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-sec-100)',
+              borderRadius: 'var(--g-radius-md)',
+              border: '1px solid var(--g-border-default)',
+            }}
+          >
+            <div className="flex items-start gap-2">
+              <Info className="h-5 w-5 mt-0.5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+              <div>
+                <p className="font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                  Sistema CSV propio de la AEAT
+                </p>
+                <p className="mt-1" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                  La propia AEAT utiliza el sistema de Codigo Seguro de Verificacion (CSV) en sus
+                  certificados de residencia fiscal emitidos a contribuyentes espanoles. Los certificados
+                  AEAT llevan un CSV alfanumerico que permite verificacion instantanea en la Sede Electronica.
+                  Este hecho establece un precedente: si Espana acepta certificados de paises que usan
+                  mecanismos analogos (portales publicos, firmas digitales, QR), la reciprocidad opera a favor
+                  de la aceptacion sin apostilla.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* EU vs non-EU */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div
+              className="p-4 flex flex-col gap-2"
+              style={{
+                backgroundColor: 'var(--g-status-success-bg)',
+                borderRadius: 'var(--g-radius-md)',
+                border: '1px solid var(--g-status-success)',
+              }}
+            >
+              <p className="font-medium flex items-center gap-1.5" style={{ color: 'var(--g-text-primary)', fontSize: 'var(--g-text-small)' }}>
+                <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--g-status-success)' }} />
+                Paises UE/EEE
+              </p>
+              <p style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                Apostilla no requerida. Los certificados con firma electronica avanzada o verificacion
+                digital se aceptan directamente al amparo de la normativa comunitaria y del Reglamento eIDAS.
+              </p>
+            </div>
+            <div
+              className="p-4 flex flex-col gap-2"
+              style={{
+                backgroundColor: 'var(--g-status-warning-bg)',
+                borderRadius: 'var(--g-radius-md)',
+                border: '1px solid var(--g-status-warning)',
+              }}
+            >
+              <p className="font-medium flex items-center gap-1.5" style={{ color: 'var(--g-text-primary)', fontSize: 'var(--g-text-small)' }}>
+                <AlertTriangle className="h-4 w-4" style={{ color: 'var(--g-status-warning)' }} />
+                Paises terceros (fuera de UE)
+              </p>
+              <p style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                La exigencia de apostilla es variable. Paises con verificacion electronica publica (Cat. A/B)
+                pueden beneficiarse de la jurisprudencia que favorece la aceptacion basada en medios tecnologicos.
+                Para paises sin verificacion digital (Cat. C/D), la apostilla es la via principal de validacion.
+              </p>
+            </div>
+          </div>
+
+          {/* Jurisprudence callout */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-sec-100)',
+              borderRadius: 'var(--g-radius-md)',
+              borderLeft: '4px solid var(--g-brand-3308)',
+            }}
+          >
+            <div className="flex items-start gap-2">
+              <Scale className="h-5 w-5 mt-0.5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+              <div>
+                <p className="font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                  Tribunal Supremo - Sentencia 12 de junio de 2023 (rec. 915/2022)
+                </p>
+                <p className="mt-1" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                  El TS establece que la Administracion debe valorar la autenticidad de los certificados de
+                  residencia fiscal atendiendo a las circunstancias concretas, incluyendo los medios tecnologicos
+                  de verificacion disponibles. Esta jurisprudencia favorece la aceptacion de certificados
+                  verificables electronicamente (portales publicos, firma digital, QR) incluso sin apostilla,
+                  cuando el pais emisor ofrece mecanismos fiables de cotejo.
+                </p>
+                <p className="mt-2" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                  <strong>Ejemplo practico:</strong> Un certificado de la ARCA argentina (Cat. A) verificado en tiempo
+                  real via portal publico tiene, segun esta doctrina, una garantia de autenticidad superior a un
+                  documento apostillado cuya apostilla no pueda verificarse digitalmente.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Practical recommendations */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-status-success-bg)',
+              borderRadius: 'var(--g-radius-md)',
+              border: '1px solid var(--g-status-success)',
+            }}
+          >
+            <p className="font-medium flex items-center gap-1.5" style={{ color: 'var(--g-text-primary)' }}>
+              <Lightbulb className="h-5 w-5" style={{ color: 'var(--g-status-success)' }} />
+              Recomendaciones LIQUIDA360
+            </p>
+            <ul className="mt-2 flex flex-col gap-1.5" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Marcar cada certificado como apostillado (si/no) en el registro
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Alertas automaticas para certificados no apostillados de paises con riesgo alto (Cat. C/D)
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Documentar siempre la verificacion electronica (captura + timestamp) como evidencia complementaria
+              </li>
+              <li className="flex items-start gap-1.5">
+                <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Para paises Cat. A/B con verificacion publica: la apostilla es recomendable pero no debe bloquear procesos
+              </li>
+              <li className="flex items-start gap-1.5">
+                <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0" style={{ color: 'var(--g-status-warning)' }} />
+                Para paises Cat. C/D sin verificacion: exigir apostilla como condicion previa a la liquidacion
+              </li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ── Recommendations ── */}
       <Card>

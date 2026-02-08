@@ -6,6 +6,7 @@ export const certificateSchema = z
     issuing_country: z.string().min(2, 'Selecciona el país emisor del certificado'),
     issue_date: z.string().min(1, 'La fecha de emisión es obligatoria'),
     expiry_date: z.string().min(1, 'La fecha de vencimiento es obligatoria'),
+    apostilled: z.boolean(),
   })
   .refine(
     (data) => {
@@ -25,4 +26,5 @@ export const certificateDefaultValues: CertificateFormData = {
   issuing_country: '',
   issue_date: '',
   expiry_date: '',
+  apostilled: false,
 }

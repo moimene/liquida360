@@ -1,7 +1,7 @@
 import { useRef, useMemo, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, Upload, FileText, X } from 'lucide-react'
+import { AlertTriangle, Upload, FileText, X, Stamp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +16,7 @@ import {
 } from '../schemas/certificate-schema'
 import { getDefaultExpiryDate, validateCountryMatch } from '@/lib/certificate-utils'
 import { COUNTRIES } from '@/lib/countries'
+import { COUNTRY_VERIFICATIONS, APOSTILLE_INFO } from '../constants/verification-guide-data'
 import type { Correspondent } from '@/types'
 
 interface CertificateFormProps {
@@ -67,6 +68,13 @@ export function CertificateForm({
     if (!selectedCorrespondent || !selectedIssuingCountry) return null
     return validateCountryMatch(selectedIssuingCountry, selectedCorrespondent.country)
   }, [selectedCorrespondent, selectedIssuingCountry])
+
+  const apostilleHint = useMemo(() => {
+    if (!selectedIssuingCountry) return null
+    const countryInfo = COUNTRY_VERIFICATIONS.find((c) => c.countryCode === selectedIssuingCountry)
+    if (!countryInfo) return null
+    return APOSTILLE_INFO[countryInfo.apostilleRequirement]
+  }, [selectedIssuingCountry])
 
   const handleIssueDateChange = useCallback(
     (value: string) => {
@@ -279,6 +287,46 @@ export function CertificateForm({
               }}
             />
             <HelpText>{CERTIFICATES_HELP.formFileUpload}</HelpText>
+          </div>
+
+          {/* Apostille */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="apostilled"
+                className="flex items-center gap-2 cursor-pointer select-none"
+              >
+                <input
+                  id="apostilled"
+                  type="checkbox"
+                  {...register('apostilled')}
+                  className="h-4 w-4 rounded"
+                  style={{ accentColor: 'var(--g-brand-3308)' }}
+                />
+                <Stamp className="h-4 w-4" style={{ color: 'var(--g-text-secondary)' }} />
+                <span className="text-sm font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                  Certificado apostillado
+                </span>
+              </label>
+            </div>
+            {apostilleHint && (
+              <div
+                className="flex items-start gap-2 p-2.5 text-xs"
+                style={{
+                  backgroundColor: apostilleHint.colorBg,
+                  borderRadius: 'var(--g-radius-sm)',
+                  color: apostilleHint.colorFg,
+                }}
+              >
+                <Stamp className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                <span>
+                  <strong>{apostilleHint.label}:</strong> {apostilleHint.description}
+                </span>
+              </div>
+            )}
+            <HelpText>
+              Marca si el certificado cuenta con apostilla del Convenio de La Haya. La necesidad de apostilla depende del pais emisor.
+            </HelpText>
           </div>
         </div>
 

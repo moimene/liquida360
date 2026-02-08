@@ -49,6 +49,8 @@ export type Database = {
           expiry_date: string
           document_url: string | null
           status: 'valid' | 'expiring_soon' | 'expired'
+          apostilled: boolean
+          apostille_requirement: string | null
           created_at: string
           updated_at: string
         }
@@ -59,6 +61,8 @@ export type Database = {
           expiry_date: string
           document_url?: string | null
           status?: 'valid' | 'expiring_soon' | 'expired'
+          apostilled?: boolean
+          apostille_requirement?: string | null
         }
         Update: {
           correspondent_id?: string
@@ -67,6 +71,8 @@ export type Database = {
           expiry_date?: string
           document_url?: string | null
           status?: 'valid' | 'expiring_soon' | 'expired'
+          apostilled?: boolean
+          apostille_requirement?: string | null
         }
         Relationships: [
           {

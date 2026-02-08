@@ -83,6 +83,7 @@ export const useCertificates = create<CertificatesState>((set, get) => ({
         expiry_date: formData.expiry_date,
         document_url: documentUrl,
         status: statusInfo.status,
+        apostilled: formData.apostilled ?? false,
       })
       .select('*, correspondents(name, country)')
       .single()

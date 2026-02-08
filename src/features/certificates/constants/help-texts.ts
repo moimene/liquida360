@@ -9,4 +9,6 @@ export const CERTIFICATES_HELP = {
     'Formatos aceptados: PDF, JPG, PNG. Tamaño máximo recomendado: 5 MB.',
   formIssuingCountry:
     'Debe coincidir con el país de origen del corresponsal.',
+  apostilleTip:
+    'Según el Convenio de La Haya y jurisprudencia del TS (sentencia 12/06/2023, rec. 915/2022), los certificados con verificación electrónica pueden ser aceptados sin apostilla, pero esta sigue siendo recomendable como garantía adicional.',
 } as const

@@ -124,6 +124,8 @@ async function main() {
       issue_date: daysAgo(330),
       expiry_date: daysFromNow(395),
       status: 'valid',
+      apostilled: false,
+      apostille_requirement: 'strongly_recommended',
     },
     {
       id: CERTIFICATES.CL,
@@ -132,6 +134,8 @@ async function main() {
       issue_date: daysAgo(210),
       expiry_date: daysFromNow(135),
       status: 'valid',
+      apostilled: true,
+      apostille_requirement: 'recommended',
     },
     {
       id: CERTIFICATES.CN,
@@ -140,6 +144,8 @@ async function main() {
       issue_date: daysAgo(150),
       expiry_date: daysFromNow(210),
       status: 'valid',
+      apostilled: true,
+      apostille_requirement: 'recommended',
     },
     {
       id: CERTIFICATES.US,
@@ -148,6 +154,8 @@ async function main() {
       issue_date: daysAgo(340),
       expiry_date: daysFromNow(25),
       status: 'expiring_soon',
+      apostilled: true,
+      apostille_requirement: 'strongly_recommended',
     },
     {
       id: CERTIFICATES.CO,
@@ -156,6 +164,8 @@ async function main() {
       issue_date: daysAgo(450),
       expiry_date: daysAgo(85),
       status: 'expired',
+      apostilled: false,
+      apostille_requirement: 'recommended',
     },
   ])
   if (certErr) { console.error('❌ certificates:', certErr.message); process.exit(1) }

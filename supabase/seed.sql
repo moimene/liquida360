@@ -55,42 +55,42 @@ VALUES
 -- ============================================
 -- 3. CERTIFICADOS (5) - Fechas relativas a CURRENT_DATE
 -- ============================================
-INSERT INTO public.certificates (id, correspondent_id, issuing_country, issue_date, expiry_date, document_url, status)
+INSERT INTO public.certificates (id, correspondent_id, issuing_country, issue_date, expiry_date, document_url, status, apostilled, apostille_requirement)
 VALUES
-  -- Mexico - VALID (vence en ~13 meses)
+  -- Mexico - VALID (vence en ~13 meses) - Cat. D, sin verificacion → apostilla fuertemente recomendada, NO apostillado
   ('b1000000-0000-0000-0000-000000000001',
    'a1000000-0000-0000-0000-000000000001', 'MX',
    CURRENT_DATE - INTERVAL '11 months',
    CURRENT_DATE + INTERVAL '13 months',
-   NULL, 'valid'),
+   NULL, 'valid', false, 'strongly_recommended'),
 
-  -- Chile - VALID (vence en ~4.5 meses)
+  -- Chile - VALID (vence en ~4.5 meses) - Cat. A, portal publico → apostilla recomendada, SI apostillado
   ('b1000000-0000-0000-0000-000000000002',
    'a1000000-0000-0000-0000-000000000002', 'CL',
    CURRENT_DATE - INTERVAL '7 months',
    CURRENT_DATE + INTERVAL '135 days',
-   NULL, 'valid'),
+   NULL, 'valid', true, 'recommended'),
 
-  -- China - VALID (vence en ~7 meses)
+  -- China - VALID (vence en ~7 meses) - Cat. B, ecosistema cerrado → apostilla recomendada, SI apostillado
   ('b1000000-0000-0000-0000-000000000003',
    'a1000000-0000-0000-0000-000000000003', 'CN',
    CURRENT_DATE - INTERVAL '5 months',
    CURRENT_DATE + INTERVAL '7 months',
-   NULL, 'valid'),
+   NULL, 'valid', true, 'recommended'),
 
-  -- USA - EXPIRING_SOON (vence en ~25 dias)
+  -- USA - EXPIRING_SOON (vence en ~25 dias) - Cat. C, sin portal → apostilla fuertemente recomendada, SI apostillado
   ('b1000000-0000-0000-0000-000000000004',
    'a1000000-0000-0000-0000-000000000004', 'US',
    CURRENT_DATE - INTERVAL '11 months',
    CURRENT_DATE + INTERVAL '25 days',
-   NULL, 'expiring_soon'),
+   NULL, 'expiring_soon', true, 'strongly_recommended'),
 
-  -- Colombia - EXPIRED (vencio hace ~85 dias)
+  -- Colombia - EXPIRED (vencio hace ~85 dias) - Cat. B, verificacion restringida → apostilla recomendada, NO apostillado
   ('b1000000-0000-0000-0000-000000000005',
    'a1000000-0000-0000-0000-000000000005', 'CO',
    CURRENT_DATE - INTERVAL '450 days',
    CURRENT_DATE - INTERVAL '85 days',
-   NULL, 'expired');
+   NULL, 'expired', false, 'recommended');
 
 -- ============================================
 -- 4. LIQUIDACIONES (20) + PAYMENT_REQUESTS

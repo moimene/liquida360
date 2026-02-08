@@ -12,6 +12,8 @@ export type VerificationProtocol =
 
 export type Region = 'latin_america' | 'north_america' | 'asia_pacific' | 'europe'
 
+export type ApostilleRequirement = 'not_required' | 'recommended' | 'strongly_recommended'
+
 export interface CountryVerification {
   countryCode: string
   countryName: string
@@ -24,6 +26,38 @@ export interface CountryVerification {
   protocols: VerificationProtocol[]
   notes: string
   inputRequired: string | null
+  /** Apostille requirement when presenting to Spanish AEAT */
+  apostilleRequirement: ApostilleRequirement
+}
+
+export const APOSTILLE_INFO: Record<ApostilleRequirement, {
+  label: string
+  shortLabel: string
+  description: string
+  colorBg: string
+  colorFg: string
+}> = {
+  not_required: {
+    label: 'No requerida',
+    shortLabel: 'No req.',
+    description: 'Paises UE: se acepta firma electronica o documento digital verificable sin apostilla.',
+    colorBg: 'var(--g-status-success-bg)',
+    colorFg: 'var(--g-status-success)',
+  },
+  recommended: {
+    label: 'Recomendada',
+    shortLabel: 'Recom.',
+    description: 'Paises terceros con verificacion electronica: apostilla recomendada pero no obligatoria segun jurisprudencia.',
+    colorBg: 'var(--g-status-warning-bg)',
+    colorFg: 'var(--g-status-warning)',
+  },
+  strongly_recommended: {
+    label: 'Fuertemente recomendada',
+    shortLabel: 'F. recom.',
+    description: 'Paises terceros sin verificacion publica: apostilla fuertemente recomendada como unico mecanismo de validacion.',
+    colorBg: 'var(--g-status-error-bg)',
+    colorFg: 'var(--g-status-error)',
+  },
 }
 
 export interface ProtocolInfo {
@@ -147,6 +181,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal'],
     notes: 'Ingresar CUIT sin guiones (11 digitos). Devuelve vigencia y periodos cubiertos. Protegido con CAPTCHA.',
     inputRequired: 'CUIT (sin guiones) + CAPTCHA',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'BO',
@@ -160,6 +195,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal'],
     notes: 'Busca por codigo del certificado (no por NIT del contribuyente). Devuelve titulo, nombre y estado.',
     inputRequired: 'Codigo del certificado',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'BR',
@@ -173,6 +209,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal'],
     notes: 'Requiere 4 datos del certificado: CPF/CNPJ, numero de control, fecha y hora exacta de emision. Previene verificaciones "a ciegas".',
     inputRequired: 'CPF/CNPJ + N. Control + Fecha + Hora',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'CL',
@@ -186,6 +223,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal', 'pki_signature'],
     notes: 'Portal bilingue (ES/EN). Permite descargar el PDF original del servidor para comparacion pixel-a-pixel. Firma electronica avanzada (FEA).',
     inputRequired: 'Codigo de verificacion del certificado',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'EC',
@@ -199,6 +237,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['qr_code', 'pki_signature'],
     notes: 'Certificados en formato P7M (firma avanzada) con QR de alta densidad. Escanear QR redirige a servidores SRI. Requiere Chrome/Firefox actualizados.',
     inputRequired: 'Escaneo QR o carga de archivo P7M',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'PY',
@@ -212,6 +251,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal'],
     notes: 'Seccion explicita "Servicios sin Clave de Acceso". Triple validacion elimina ambiguedad sobre credenciales requeridas.',
     inputRequired: 'RUC + Razon social + N. certificado',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'UY',
@@ -225,6 +265,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['public_portal'],
     notes: 'Requiere navegadores actualizados (Chrome 33+, Firefox 34+). Validacion SSL/TLS estricta; navegadores obsoletos bloqueados.',
     inputRequired: 'Codigo de seguridad alfanumerico',
+    apostilleRequirement: 'recommended',
   },
 
   // ── NORTH AMERICA ──
@@ -240,6 +281,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['apostille'],
     notes: 'Solicitud via Form 8802 (45+ dias). Requiere apostilla del Departamento de Estado. Sin verificacion digital disponible.',
     inputRequired: null,
+    apostilleRequirement: 'strongly_recommended',
   },
   {
     countryCode: 'CA',
@@ -253,6 +295,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['apostille', 'pki_signature'],
     notes: 'Cambio de paradigma post-enero 2024: de legalizacion consular a e-Apostilla. Portales provinciales de verificacion (ej: ontario.ca/verifyapostille).',
     inputRequired: 'Numero de apostilla + portal provincial',
+    apostilleRequirement: 'recommended',
   },
 
   // ── ASIA-PACIFIC ──
@@ -268,6 +311,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['qr_code', 'pki_signature'],
     notes: 'Funcionalmente Cat. A pero operativamente B: requiere WeChat mini-programs o app STA. Sin interfaz web global ni version en ingles.',
     inputRequired: 'Escaneo QR via app WeChat/STA',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'HK',
@@ -281,6 +325,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['restricted'],
     notes: 'Sistema "e-Proof" disenado para socios de CDI (DTA partners). No accesible al publico general.',
     inputRequired: 'Acceso restringido a DTA partners',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'SG',
@@ -294,6 +339,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['restricted', 'pki_signature'],
     notes: 'Certificados COR 100% digitales en PDF. Verificacion via myTax requiere Singpass, excluyendo a terceros internacionales sin residencia.',
     inputRequired: 'Singpass (ID digital nacional)',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'JP',
@@ -307,6 +353,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['apostille'],
     notes: 'Sistema mas tradicional entre economias avanzadas. Validacion depende de cadenas de legalizacion fisica. Apostilla disponible.',
     inputRequired: null,
+    apostilleRequirement: 'strongly_recommended',
   },
   {
     countryCode: 'AU',
@@ -320,6 +367,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['apostille', 'pki_signature'],
     notes: 'El DVS del ATO verifica documentos de identidad, no certificados fiscales. Validacion via copias certificadas + cadena de apostilla.',
     inputRequired: null,
+    apostilleRequirement: 'recommended',
   },
 
   // ── EUROPE ──
@@ -335,6 +383,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['apostille', 'pki_signature'],
     notes: 'Sin portal publico de verificacion de certificados fiscales. Solucion: e-Apostilla del FCDO (PDF firmado criptograficamente) verificable en gov.uk/verify-apostille.',
     inputRequired: 'Numero de e-Apostilla',
+    apostilleRequirement: 'recommended',
   },
 
   // ── ADDITIONAL LATAM (Cat. B) ──
@@ -350,6 +399,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['csv_cotejo', 'qr_code'],
     notes: 'No existe boton unico "Validar certificado". Requiere conocimiento del sistema administrativo colombiano (numeros de acto, fechas exactas). Reclasificado B+ (herramientas forenses disponibles).',
     inputRequired: 'N. acto administrativo + fecha exacta',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'CR',
@@ -363,6 +413,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['pki_signature'],
     notes: 'Sistema de certificacion digital nacional (BCCR). Subir PDF/XML firmado para validar cadena de confianza. Documentos digitales legalmente equivalentes a fisicos.',
     inputRequired: 'Archivo PDF/XML firmado digitalmente',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'PA',
@@ -376,6 +427,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['restricted'],
     notes: 'Modulo de verificacion NO es publico anonimo (requiere registro en e-Tax). Tiempos de emision: 3-5 meses. Paz y Salvo como complemento de "good standing".',
     inputRequired: 'Registro en e-Tax 2.0',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'PE',
@@ -389,6 +441,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: ['pki_signature', 'qr_code'],
     notes: 'Reclasificado de C a A-funcional: validacion criptografica superior a simple consulta por codigo. Requiere archivo digital original (copias escaneadas fallan la validacion). QR alternativo disponible.',
     inputRequired: 'Archivo PDF/P7M original',
+    apostilleRequirement: 'recommended',
   },
   {
     countryCode: 'MX',
@@ -402,6 +455,7 @@ export const COUNTRY_VERIFICATIONS: CountryVerification[] = [
     protocols: [],
     notes: 'ATENCION: La "Constancia de Situacion Fiscal" (con QR, verificable) NO es la "Constancia de Residencia para Efectos Fiscales" (sin QR, sin portal). Protocolo de rechazo requerido si se entrega documento incorrecto.',
     inputRequired: null,
+    apostilleRequirement: 'strongly_recommended',
   },
 ]
 
