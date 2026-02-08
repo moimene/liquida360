@@ -19,7 +19,7 @@ const corsHeaders = {
 const INTERNAL_ROLES = ['pagador', 'supervisor', 'financiero', 'admin']
 
 interface ManageUsersPayload {
-  action: 'list' | 'invite' | 'update_role' | 'approve_user'
+  action: 'list' | 'invite' | 'update_role' | 'approve_user' | 'delete_user'
   email?: string
   role?: string
   userId?: string
@@ -304,6 +304,56 @@ Deno.serve(async (req) => {
           success: true,
           userId,
           message: `User approved with role ${role}`,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      )
+    }
+
+    // -----------------------------------------------
+    // ACTION: delete_user — Delete a user from auth
+    // The user record is removed from auth but any
+    // references in the database (liquidations, etc.)
+    // are preserved for audit purposes.
+    // -----------------------------------------------
+    if (payload.action === 'delete_user') {
+      const { userId } = payload
+
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'userId is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Prevent admin from deleting themselves
+      if (userId === caller.id) {
+        return new Response(
+          JSON.stringify({ error: 'Cannot delete your own account' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        )
+      }
+
+      const { error: deleteError } =
+        await supabaseAdmin.auth.admin.deleteUser(userId)
+
+      if (deleteError) {
+        return new Response(JSON.stringify({ error: deleteError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          userId,
+          message: 'User deleted from auth',
         }),
         {
           status: 200,

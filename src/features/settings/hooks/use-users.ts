@@ -23,6 +23,7 @@ interface UsersState {
   ) => Promise<{ error: string | null; magicLink?: string | null; emailSent?: boolean }>
   updateRole: (userId: string, role: string) => Promise<{ error: string | null }>
   approveUser: (userId: string, role: string) => Promise<{ error: string | null }>
+  deleteUser: (userId: string) => Promise<{ error: string | null }>
 }
 
 export const useUsers = create<UsersState>((set, get) => ({
@@ -99,6 +100,24 @@ export const useUsers = create<UsersState>((set, get) => ({
 
     // Re-fetch user list to reflect the change
     await get().fetchUsers()
+    return { error: null }
+  },
+
+  deleteUser: async (userId) => {
+    // Optimistic removal
+    const prevUsers = get().users
+    set({ users: prevUsers.filter((u) => u.id !== userId) })
+
+    const { data, error } = await supabase.functions.invoke('manage-users', {
+      body: { action: 'delete_user', userId },
+    })
+
+    if (error || data?.error) {
+      // Revert on failure
+      set({ users: prevUsers })
+      return { error: error?.message ?? data?.error ?? 'Error desconocido' }
+    }
+
     return { error: null }
   },
 }))

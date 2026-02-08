@@ -17,7 +17,7 @@ import { useCorrespondents } from '@/features/correspondents/hooks/use-correspon
 import { supabase } from '@/lib/supabase'
 import { InviteUserForm } from './invite-user-form'
 import { ROLE_OPTIONS, type InviteUserFormData } from '../schemas/settings-schemas'
-import { Plus, UserCheck, Clock, Copy, Check, Users, Link2 } from 'lucide-react'
+import { Plus, UserCheck, Clock, Copy, Check, Users, Link2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -35,7 +35,7 @@ const ROLE_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'success' | '
 export function UsersTab() {
   const currentUser = useAuth((s) => s.user)
   const session = useAuth((s) => s.session)
-  const { users, loading, fetchUsers, inviteUser, updateRole, approveUser } = useUsers()
+  const { users, loading, fetchUsers, inviteUser, updateRole, approveUser, deleteUser } = useUsers()
   const { correspondents, loading: corrsLoading, fetchCorrespondents } = useCorrespondents()
   const [sorting, setSorting] = useState<SortingState>([])
   const [inviteOpen, setInviteOpen] = useState(false)
@@ -48,6 +48,8 @@ export function UsersTab() {
   const [magicLinkValue, setMagicLinkValue] = useState<string | null>(null)
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [copied, setCopied] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<InternalUser | null>(null)
 
   const pendingCorrespondents = useMemo(
     () => correspondents.filter((c) => c.status === 'pending_approval'),
@@ -179,8 +181,30 @@ export function UsersTab() {
           )
         },
       },
+      {
+        id: 'actions',
+        header: '',
+        cell: ({ row }) => {
+          const isSelf = row.original.id === currentUser?.id
+          if (isSelf) return null
+          return (
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setConfirmDeleteUser(row.original)}
+                loading={deletingId === row.original.id}
+                aria-label="Eliminar usuario"
+              >
+                <Trash2 className="h-4 w-4" style={{ color: 'var(--status-error)' }} />
+              </Button>
+            </div>
+          )
+        },
+        enableSorting: false,
+      },
     ],
-    [currentUser?.id, updateRole],
+    [currentUser?.id, updateRole, deletingId],
   )
 
   const table = useReactTable({
@@ -223,6 +247,22 @@ export function UsersTab() {
       setTimeout(() => setCopied(false), 3000)
     } catch {
       toast.error('No se pudo copiar el enlace')
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!confirmDeleteUser) return
+    setDeletingId(confirmDeleteUser.id)
+
+    const { error } = await deleteUser(confirmDeleteUser.id)
+
+    setDeletingId(null)
+    setConfirmDeleteUser(null)
+
+    if (error) {
+      toast.error('Error al eliminar usuario', { description: error })
+    } else {
+      toast.success(`Usuario ${confirmDeleteUser.email} eliminado`)
     }
   }
 
@@ -583,6 +623,28 @@ export function UsersTab() {
           <Button onClick={handleCopyLink}>
             {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? 'Copiado' : 'Copiar enlace'}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+
+      {/* Delete User Confirmation Dialog */}
+      <Dialog
+        open={!!confirmDeleteUser}
+        onClose={() => setConfirmDeleteUser(null)}
+        title="Eliminar usuario"
+        description={`¿Estás seguro de que deseas eliminar a ${confirmDeleteUser?.email ?? ''}? El usuario perderá acceso al sistema pero su historial en la base de datos se mantendrá.`}
+      >
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setConfirmDeleteUser(null)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteUser}
+            loading={!!deletingId}
+          >
+            <Trash2 className="h-4 w-4" />
+            Eliminar usuario
           </Button>
         </DialogFooter>
       </Dialog>

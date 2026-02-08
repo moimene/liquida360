@@ -37,11 +37,6 @@ export function DashboardPage() {
       (l) => l.status === 'approved' || l.status === 'payment_requested',
     ).length
 
-    const validCerts = certificates.filter((c) => {
-      const info = getCertificateStatus(c.expiry_date)
-      return info.status === 'valid'
-    }).length
-
     const expiringCerts = certificates.filter((c) => {
       const info = getCertificateStatus(c.expiry_date)
       return info.status === 'expiring_soon'
@@ -59,11 +54,9 @@ export function DashboardPage() {
     return {
       pendingLiquidations,
       approvedLiquidations,
-      validCerts,
       expiringCerts,
       expiredCerts,
       pendingPayments,
-      totalCertificates: certificates.length,
     }
   }, [liquidations, certificates, requests])
 
@@ -73,7 +66,7 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         <MetricCard
           title="Liquidaciones pendientes"
           value={loading ? '—' : String(stats.pendingLiquidations)}
@@ -81,15 +74,7 @@ export function DashboardPage() {
           variant={stats.pendingLiquidations > 0 ? 'warning' : undefined}
           badgeLabel={stats.pendingLiquidations > 0 ? 'Pendientes' : undefined}
           helpText={DASHBOARD_HELP.kpiPendingLiquidations}
-        />
-        <MetricCard
-          title="Certificados vigentes"
-          value={loading ? '—' : String(stats.validCerts)}
-          icon={FileCheck}
-          variant="success"
-          badgeLabel="Vigentes"
-          subtext={`${stats.totalCertificates} total`}
-          helpText={DASHBOARD_HELP.kpiValidCertificates}
+          onClick={() => navigate('/liquidations')}
         />
         <MetricCard
           title="Certificados por vencer"
@@ -99,6 +84,7 @@ export function DashboardPage() {
           badgeLabel={stats.expiringCerts + stats.expiredCerts > 0 ? 'Urgente' : undefined}
           subtext={stats.expiredCerts > 0 ? `${stats.expiredCerts} vencidos` : undefined}
           helpText={DASHBOARD_HELP.kpiExpiringCertificates}
+          onClick={() => navigate('/certificates')}
         />
         {role === 'financiero' || role === 'admin' ? (
           <MetricCard
@@ -108,6 +94,7 @@ export function DashboardPage() {
             variant={stats.pendingPayments > 0 ? 'warning' : undefined}
             badgeLabel={stats.pendingPayments > 0 ? 'En cola' : undefined}
             helpText={DASHBOARD_HELP.kpiPendingPayments}
+            onClick={() => navigate('/payments')}
           />
         ) : (
           <MetricCard
@@ -116,6 +103,7 @@ export function DashboardPage() {
             icon={Clock}
             subtext="Liquidaciones en proceso"
             helpText={DASHBOARD_HELP.kpiInApproval}
+            onClick={() => navigate('/liquidations')}
           />
         )}
       </div>
@@ -281,6 +269,7 @@ function MetricCard({
   variant,
   badgeLabel,
   helpText,
+  onClick,
 }: {
   title: string
   value: string
@@ -289,9 +278,15 @@ function MetricCard({
   variant?: 'success' | 'warning' | 'destructive'
   badgeLabel?: string
   helpText?: string
+  onClick?: () => void
 }) {
   return (
-    <Card>
+    <Card
+      className={onClick ? 'cursor-pointer transition-colors' : undefined}
+      onClick={onClick}
+      onMouseEnter={onClick ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--g-surface-muted)' } : undefined}
+      onMouseLeave={onClick ? (e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '' } : undefined}
+    >
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div>
