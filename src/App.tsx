@@ -66,6 +66,11 @@ const SettingsPage = lazy(() =>
     default: m.SettingsPage,
   })),
 )
+const SecurityManifestPage = lazy(() =>
+  import('@/features/settings/components/security-manifest-page').then((m) => ({
+    default: m.SecurityManifestPage,
+  })),
+)
 
 // Lazy-loaded portal route pages (code splitting)
 const PortalDashboardPage = lazy(() =>
@@ -165,6 +170,7 @@ function App() {
                 }
               />
               <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="security" element={<SecurityManifestPage />} />
               <Route
                 path="settings"
                 element={

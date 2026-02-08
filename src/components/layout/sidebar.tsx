@@ -10,6 +10,7 @@ import {
   CreditCard,
   Bell,
   Settings,
+  Shield,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -137,6 +138,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         className="px-3 py-4"
         style={{ borderTop: '1px solid hsl(var(--sidebar-border) / 0.5)' }}
       >
+        {/* Security manifest link - visible to all authenticated users */}
+        <div className="mb-2">
+          <SidebarItem
+            item={{ label: 'Seguridad', path: '/security', icon: Shield }}
+            collapsed={collapsed}
+          />
+        </div>
+
         {!collapsed && user && (
           <div className="mb-3 px-2">
             <div className="text-sm truncate" style={{ color: 'hsl(var(--sidebar-foreground))' }}>
