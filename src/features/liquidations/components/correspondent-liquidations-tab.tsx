@@ -31,12 +31,14 @@ export function CorrespondentLiquidationsTab({ correspondent }: CorrespondentLiq
         l.status === 'approved' ||
         l.status === 'payment_requested',
     ).length
-    const totalAmount = liquidations
-      .filter((l) => l.status !== 'rejected')
-      .reduce((sum, l) => sum + l.amount, 0)
-    const mainCurrency = liquidations.length > 0 ? liquidations[0].currency : 'EUR'
+    // Group totals by currency
+    const amountsByCurrency: Record<string, number> = {}
+    for (const l of liquidations.filter((l) => l.status !== 'rejected')) {
+      const cur = l.currency ?? 'EUR'
+      amountsByCurrency[cur] = (amountsByCurrency[cur] ?? 0) + l.amount
+    }
 
-    return { total, paid, pending, totalAmount, mainCurrency }
+    return { total, paid, pending, amountsByCurrency }
   }, [liquidations])
 
   if (loading) {
@@ -55,11 +57,41 @@ export function CorrespondentLiquidationsTab({ correspondent }: CorrespondentLiq
         <StatCard label="Total" value={String(stats.total)} />
         <StatCard label="Pagadas" value={String(stats.paid)} />
         <StatCard label="En proceso" value={String(stats.pending)} />
-        <StatCard
-          label="Importe total"
-          value={formatAmount(stats.totalAmount, stats.mainCurrency)}
-          highlight
-        />
+        <div
+          className="p-4"
+          style={{
+            backgroundColor: 'var(--g-surface-card)',
+            border: '1px solid var(--g-border-default)',
+            borderRadius: 'var(--g-radius-lg)',
+          }}
+        >
+          <p
+            className="text-xs font-medium uppercase tracking-wider mb-1"
+            style={{ color: 'var(--g-text-secondary)' }}
+          >
+            Importe total
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {Object.entries(stats.amountsByCurrency).length === 0 ? (
+              <p
+                className="text-lg font-bold"
+                style={{ color: 'var(--g-brand-3308)' }}
+              >
+                0,00
+              </p>
+            ) : (
+              Object.entries(stats.amountsByCurrency).map(([currency, amount]) => (
+                <p
+                  key={currency}
+                  className="text-lg font-bold"
+                  style={{ color: 'var(--g-brand-3308)' }}
+                >
+                  {formatAmount(amount, currency)}
+                </p>
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       {/* List */}
