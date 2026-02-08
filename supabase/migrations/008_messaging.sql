@@ -1,9 +1,11 @@
 -- 008_messaging.sql
 -- Real-time messaging system: user_profiles, conversations, conversation_participants, messages
+-- NOTE: Tables created first, then RLS + policies, to avoid forward-reference errors.
 
 -- =============================================================================
--- 1. user_profiles — public view of auth.users for client-side queries
+-- PHASE 1: Create all tables
 -- =============================================================================
+
 CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -14,8 +16,46 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
-ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT,
+  is_group BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
+CREATE TABLE IF NOT EXISTS conversation_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id),
+  joined_at TIMESTAMPTZ DEFAULT now(),
+  last_read_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(conversation_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES auth.users(id),
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- =============================================================================
+-- PHASE 2: Enable RLS on all tables
+-- =============================================================================
+
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+-- =============================================================================
+-- PHASE 3: Create all policies (all tables exist now, no forward-reference issues)
+-- =============================================================================
+
+-- user_profiles policies
 CREATE POLICY "Authenticated users can view all profiles"
   ON user_profiles FOR SELECT
   TO authenticated
@@ -27,20 +67,7 @@ CREATE POLICY "Users can update own profile"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
--- =============================================================================
--- 2. conversations
--- =============================================================================
-CREATE TABLE IF NOT EXISTS conversations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT,
-  is_group BOOLEAN DEFAULT false,
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
-
+-- conversations policies
 CREATE POLICY "Participants can view their conversations"
   ON conversations FOR SELECT
   TO authenticated
@@ -68,20 +95,7 @@ CREATE POLICY "Participants can update conversation"
     )
   );
 
--- =============================================================================
--- 3. conversation_participants
--- =============================================================================
-CREATE TABLE IF NOT EXISTS conversation_participants (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id),
-  joined_at TIMESTAMPTZ DEFAULT now(),
-  last_read_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(conversation_id, user_id)
-);
-
-ALTER TABLE conversation_participants ENABLE ROW LEVEL SECURITY;
-
+-- conversation_participants policies
 CREATE POLICY "Participants can view co-participants"
   ON conversation_participants FOR SELECT
   TO authenticated
@@ -111,19 +125,7 @@ CREATE POLICY "Users can update own participation"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- =============================================================================
--- 4. messages
--- =============================================================================
-CREATE TABLE IF NOT EXISTS messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
-  sender_id UUID REFERENCES auth.users(id),
-  content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
+-- messages policies
 CREATE POLICY "Participants can view messages"
   ON messages FOR SELECT
   TO authenticated
@@ -148,8 +150,9 @@ CREATE POLICY "Participants can send messages"
   );
 
 -- =============================================================================
--- 5. Trigger: update conversations.updated_at on new message
+-- PHASE 4: Trigger for conversations.updated_at
 -- =============================================================================
+
 CREATE OR REPLACE FUNCTION update_conversation_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -166,8 +169,9 @@ CREATE TRIGGER trg_update_conversation_on_message
   EXECUTE FUNCTION update_conversation_timestamp();
 
 -- =============================================================================
--- 6. Indexes for performance
+-- PHASE 5: Indexes
 -- =============================================================================
+
 CREATE INDEX IF NOT EXISTS idx_messages_conversation_created
   ON messages(conversation_id, created_at);
 
@@ -181,7 +185,8 @@ CREATE INDEX IF NOT EXISTS idx_conversations_updated
   ON conversations(updated_at DESC);
 
 -- =============================================================================
--- 7. Enable Realtime for messaging tables
+-- PHASE 6: Enable Realtime
 -- =============================================================================
+
 ALTER PUBLICATION supabase_realtime ADD TABLE messages;
 ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
