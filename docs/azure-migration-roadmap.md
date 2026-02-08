@@ -279,11 +279,127 @@ CREATE POLICY "Users can view own liquidations"
 - [ ] Cutover: redirigir DNS, desactivar Supabase/Vercel
 - [ ] Periodo de validacion en paralelo (2 semanas)
 
-**Estimacion total: 3-4 meses** con equipo de 2-3 desarrolladores.
+### Estimacion de esfuerzo: escenarios comparados
+
+Las estimaciones anteriores por fase asumen un **desarrollo tradicional** sin herramientas de asistencia IA. Con el ecosistema actual de herramientas de desarrollo AI-assisted, los tiempos se reducen significativamente.
+
+| Fase | Tradicional (2-3 devs) | AI-assisted (1-2 devs) | Factor de aceleracion |
+|:-----|:-----------------------|:-----------------------|:----------------------|
+| F1: Infraestructura | 1-2 semanas | 3-5 dias | ~2x (IaC generado, plantillas ARM/Bicep) |
+| F2: Datos y frontend | 2-3 semanas | 1-2 semanas | ~2x (migracion auth automatizable) |
+| F3: API Backend | 6-8 semanas | 2-3 semanas | **~3x** (generacion CRUD altamente repetitiva) |
+| F4: Validacion | 2-4 semanas | 1-2 semanas | ~2x (suite E2E existente, ajustes menores) |
+| **TOTAL** | **3-4 meses / 2-3 devs** | **5-8 semanas / 1-2 devs** | **~2.5x** |
+
+#### Herramientas de desarrollo AI-assisted aplicables
+
+| Herramienta | Aplicacion en la migracion |
+|:------------|:---------------------------|
+| **Claude Code** | Generacion de Azure Functions CRUD a partir del esquema SQL y patrones existentes. Adaptacion de RLS policies. Refactorizacion de imports supabase-js → Azure SDK. |
+| **Codex / GitHub Copilot** | Scaffolding de funciones, autocompletado de middleware auth, generacion de tests. |
+| **Antigravity** | Orquestacion de tareas de migracion complejas, analisis de dependencias. |
+| **Skill garrigues-security-compliance** | Generacion automatica de manifiesto, clasificacion de datos, patrones de codigo portable y roadmap de migracion para cada nuevo prototipo. |
+
+**Por que la Fase 3 (API Backend) se acelera x3**: La generacion de Azure Functions CRUD es una tarea **altamente repetitiva y patron-driven**. Cada funcion sigue el mismo patron: validar token Entra ID → establecer contexto RLS → ejecutar query PostgreSQL → devolver respuesta. Un agente AI con el esquema SQL y un ejemplo de funcion completada puede generar las ~30 funciones restantes con supervision humana minima.
+
+#### Referencia: marcos existentes en iobuilders
+
+**iobuilders** (empresa participada por Garrigues) dispone de marcos de referencia para desarrollo AI-assisted que podrian aplicarse directamente a esta migracion y a futuras:
+
+- Metodologias de pair-programming con AI ya validadas en proyectos reales
+- Experiencia en migraciones de arquitecturas BaaS a infraestructura corporativa
+- Frameworks de generacion de codigo con validacion automatizada
+- Pipelines CI/CD con testing integrado adaptados a entornos regulados
+
+Estos marcos permitirian no solo acelerar la migracion de LIQUIDA360, sino **establecer un patron replicable** para todas las futuras aplicaciones que sigan el flujo prototipo → produccion.
 
 ---
 
-## 7. Matriz de riesgos de la migracion
+## 7. Industrializacion: del prototipo al flujo corporativo
+
+La migracion de LIQUIDA360 no es un esfuerzo aislado. Establece un **marco de referencia reutilizable** que factoriza e industrializa el proceso para todas las futuras soluciones internas de Garrigues.
+
+### 7.1 Flujo estandarizado de prototipado → produccion
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                                                              │
+│   FASE 1: PROTOTIPO AGIL (2-4 semanas)                                      │
+│   ────────────────────────────────────                                       │
+│   · Arquitectura agil (Supabase/Firebase/Vercel)                             │
+│   · Desarrollo AI-assisted (Claude Code + skills)                            │
+│   · Skill garrigues-security-compliance activada desde el dia 1              │
+│   · Manifiesto de seguridad generado automaticamente                         │
+│   · Patrones de codigo portables (abstracciones de auth, servicios, RLS)     │
+│                                                                              │
+│                              ▼                                               │
+│                                                                              │
+│   FASE 2: VALIDACION CON USUARIOS (2-4 semanas)                             │
+│   ──────────────────────────────────────────────                             │
+│   · Pruebas con usuarios reales en entorno de demostracion                   │
+│   · Recogida de feedback y ajustes funcionales                               │
+│   · Security review y evaluacion de GAPs                                     │
+│   · Decision: ¿Se confirma la utilidad?                                      │
+│                                                                              │
+│                     ▼ SI                         ▼ NO                        │
+│                                                                              │
+│   FASE 3: DECISION DEL COMITE                   Fin: lecciones aprendidas   │
+│   ────────────────────────────                   documentadas               │
+│   · Manifiesto presentado al Comite de Seguridad                             │
+│   · Evaluacion de clasificacion de datos                                     │
+│   · Aprobacion de migracion a Azure                                          │
+│                                                                              │
+│                              ▼                                               │
+│                                                                              │
+│   FASE 4: MIGRACION A AZURE (5-8 semanas con AI-assisted)                   │
+│   ────────────────────────────────────────────────────────                   │
+│   · Reutilizar arquitectura de referencia Azure documentada                  │
+│   · Azure Functions generadas con AI a partir de esquema SQL                 │
+│   · Entra ID (SSO + MFA ya existente)                                        │
+│   · Suite de tests existente como red de seguridad                           │
+│   · Pentesting + auditoria IT Garrigues                                      │
+│                                                                              │
+│                              ▼                                               │
+│                                                                              │
+│   FASE 5: PRODUCCION                                                         │
+│   ──────────────────                                                         │
+│   · Azure Spain Central (ISO 27001 + ENS Alto)                               │
+│   · Integrado en SGSI Garrigues                                              │
+│   · Monitorizacion via Azure Monitor / Defender                              │
+│   · Mantenimiento con AI-assisted dev                                        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 Activos reutilizables generados por LIQUIDA360
+
+| Activo | Descripcion | Reutilizable en |
+|:-------|:------------|:----------------|
+| **Skill garrigues-security-compliance** | Genera automaticamente manifiesto, clasificacion de datos, evaluacion ISO 27001 y roadmap de migracion | Todo futuro prototipo |
+| **Arquitectura de referencia Azure** | Static Web Apps + Functions + PostgreSQL + Entra ID, documentada con diagramas y codigo | Toda app de gestion interna |
+| **Patrones de codigo portable** | Abstracciones de auth, servicios y RLS con fallback Supabase/Azure | Cualquier BaaS → Azure |
+| **Plantillas de Azure Functions** | Middleware auth Entra ID, contexto RLS, patron CRUD | Toda API REST en Azure |
+| **Pipeline CI/CD** | GitHub Actions con build, test, deploy a Azure Static Web Apps | Todo proyecto React |
+| **Security review template** | Checklist de seguridad, evaluacion de controles, matriz de riesgos | Toda aplicacion |
+| **Suite de tests E2E** | Patrones Playwright para flujos de negocio (independientes del backend) | Todo proyecto web |
+
+### 7.3 Economia de la industrializacion
+
+| Concepto | Primera migracion (LIQUIDA360) | Futuras migraciones |
+|:---------|:-------------------------------|:--------------------|
+| Arquitectura de referencia | Se crea | Se reutiliza |
+| Skill de compliance | Se crea | Se reutiliza |
+| Plantillas Azure Functions | Se crea | Se reutiliza (~60% del codigo) |
+| Configuracion Entra ID | Se configura | Se replica (nuevo App Registration) |
+| Pipeline CI/CD | Se crea | Se replica con minimos ajustes |
+| **Esfuerzo estimado (AI-assisted)** | **5-8 semanas** | **3-5 semanas** |
+| **Equipo necesario** | **1-2 devs** | **1 dev** |
+
+**Conclusion**: Cada migracion posterior sera mas rapida y economica. El framework de migracion se amortiza desde la segunda aplicacion.
+
+---
+
+## 8. Matriz de riesgos de la migracion
 
 | Riesgo | Probabilidad | Impacto | Mitigacion |
 |:-------|:-------------|:--------|:-----------|
@@ -295,7 +411,7 @@ CREATE POLICY "Users can view own liquidations"
 
 ---
 
-## 8. Estimacion de costes Azure (orientativa)
+## 9. Estimacion de costes Azure (orientativa)
 
 | Servicio | Tier recomendado | Coste mensual estimado |
 |:---------|:-----------------|:----------------------|
@@ -312,14 +428,17 @@ CREATE POLICY "Users can view own liquidations"
 
 ---
 
-## 9. Conclusion
+## 10. Conclusion
 
 La migracion a Azure es **tecnicamente viable** y **estrategicamente recomendable**:
 
 1. **El 70% del codigo se conserva intacto** (frontend, SQL, tests, design system)
 2. **El esfuerzo principal** esta en la capa de API (Azure Functions) y adaptacion de RLS
-3. **Los beneficios superan la inversion**: cumplimiento pleno ISO 27001, ENS, soberania de datos, SSO corporativo
-4. **iManage no interviene**: la aplicacion gestiona datos operativos, no documentos del DMS
-5. **La suite de tests existente** (266 tests) garantiza la calidad durante la migracion
+3. **Con herramientas AI-assisted** (Claude Code, Codex, Antigravity) y la skill de compliance, el esfuerzo se reduce de 3-4 meses a **5-8 semanas con 1-2 desarrolladores**
+4. **iobuilders** (empresa participada por Garrigues) dispone de marcos de referencia aplicables directamente
+5. **Los beneficios superan la inversion**: cumplimiento pleno ISO 27001, ENS, soberania de datos, SSO corporativo
+6. **iManage no interviene**: la aplicacion gestiona datos operativos, no documentos del DMS
+7. **La suite de tests existente** (266 tests) garantiza la calidad durante la migracion
+8. **La inversion se factoriza**: cada migracion posterior sera mas rapida (~3-5 semanas, 1 dev) al reutilizar los activos generados
 
-La decision de migrar deberia tomarse una vez confirmada la utilidad de LIQUIDA360 como herramienta de gestion interna, siguiendo el roadmap del Manifiesto de Seguridad (Fase 3).
+**Vision estrategica**: LIQUIDA360 establece el **flujo estandarizado de prototipado → produccion** para Garrigues: prototipar rapido con arquitecturas agiles (2-4 semanas), validar con usuarios, y migrar a Azure corporativo con herramientas AI-assisted cuando se confirme la utilidad. Este flujo, una vez establecido, es replicable para todas las futuras soluciones internas del despacho.

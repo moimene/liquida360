@@ -1015,35 +1015,110 @@ export function SecurityManifestTab() {
             ))}
           </div>
 
-          {/* Timeline */}
+          {/* Timeline comparativa */}
           <SectionTitle
             icon={Clock}
-            title="Estimacion de esfuerzo"
-            subtitle="3-4 meses con equipo de 2-3 desarrolladores"
+            title="Estimacion de esfuerzo: escenarios comparados"
+            subtitle="Desarrollo tradicional vs. desarrollo asistido por IA"
           />
           <TableWrapper>
             <thead>
               <tr>
                 <Th>Fase</Th>
-                <Th>Duracion</Th>
+                <Th>Tradicional</Th>
+                <Th>Con AI-assisted dev</Th>
                 <Th>Alcance</Th>
               </tr>
             </thead>
             <tbody>
               {[
-                { phase: 'F1: Infraestructura Azure', duration: '1-2 semanas', scope: 'Provisionar recursos, Entra ID, Key Vault, networking' },
-                { phase: 'F2: Datos y frontend', duration: '2-3 semanas', scope: 'pg_dump/restore, migrar Storage, autenticacion MSAL, CI/CD' },
-                { phase: 'F3: API Backend', duration: '6-8 semanas', scope: 'Azure Functions CRUD, middleware auth, adaptacion RLS' },
-                { phase: 'F4: Validacion', duration: '2-4 semanas', scope: 'Suite E2E (146 tests), pentesting, revision IT Garrigues' },
+                { phase: 'F1: Infraestructura Azure', traditional: '1-2 sem', ai: '3-5 dias', scope: 'IaC generado por AI, Entra ID, Key Vault, networking' },
+                { phase: 'F2: Datos y frontend', traditional: '2-3 sem', ai: '1-2 sem', scope: 'pg_dump/restore, MSAL auth, CI/CD (plantillas reutilizables)' },
+                { phase: 'F3: API Backend', traditional: '6-8 sem', ai: '2-3 sem', scope: '~30 Azure Functions generadas con skill + patrones' },
+                { phase: 'F4: Validacion', traditional: '2-4 sem', ai: '1-2 sem', scope: 'Suite E2E existente (146 tests) + pentesting' },
               ].map((row) => (
                 <tr key={row.phase}>
                   <Td><span className="font-medium" style={{ fontSize: 'var(--g-text-small)' }}>{row.phase}</span></Td>
-                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.duration}</span></Td>
+                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.traditional}</span></Td>
+                  <Td><span className="font-medium" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-status-success)' }}>{row.ai}</span></Td>
                   <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.scope}</span></Td>
                 </tr>
               ))}
+              <tr>
+                <Td><span className="font-bold">TOTAL</span></Td>
+                <Td><span className="font-bold" style={{ fontSize: 'var(--g-text-small)' }}>3-4 meses / 2-3 devs</span></Td>
+                <Td><span className="font-bold" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-status-success)' }}>5-8 semanas / 1-2 devs</span></Td>
+                <Td><span /></Td>
+              </tr>
             </tbody>
           </TableWrapper>
+
+          {/* AI acceleration callout */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-status-success-bg)',
+              borderRadius: 'var(--g-radius-md)',
+              border: '1px solid var(--g-status-success)',
+            }}
+          >
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+              <div>
+                <p className="font-medium" style={{ color: 'var(--g-text-primary)', fontSize: 'var(--g-text-body)' }}>
+                  Aceleracion con herramientas de desarrollo asistido por IA
+                </p>
+                <p className="mt-1" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                  Las estimaciones <strong>tradicionales</strong> asumen desarrollo manual sin herramientas de asistencia.
+                  Con marcos de desarrollo AI-assisted (<strong>Claude Code, Codex, Antigravity</strong>) y skills
+                  reutilizables como <code style={{ fontFamily: 'monospace' }}>garrigues-security-compliance</code>,
+                  el esfuerzo se reduce significativamente: la generacion de Azure Functions CRUD,
+                  adaptacion de RLS y scaffolding de infraestructura son tareas altamente automatizables.
+                </p>
+                <p className="mt-2" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                  <strong>iobuilders</strong> (empresa participada por Garrigues) dispone de marcos de referencia
+                  para desarrollo AI-assisted que podrian aplicarse directamente, reduciendo el equipo necesario
+                  a 1-2 desarrolladores y el timeline a 5-8 semanas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Industrialization callout */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-sec-100)',
+              borderRadius: 'var(--g-radius-md)',
+              borderLeft: '4px solid var(--g-brand-3308)',
+            }}
+          >
+            <p className="font-bold mb-2" style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-brand-3308)' }}>
+              Industrializacion: del prototipo al flujo corporativo
+            </p>
+            <p className="mb-2" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+              La migracion de LIQUIDA360 no es un esfuerzo aislado: establece un <strong>marco de referencia
+              reutilizable</strong> para futuras soluciones internas de Garrigues:
+            </p>
+            <ul className="flex flex-col gap-1.5" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-primary)' }}>
+              <li className="flex items-start gap-2">
+                <ArrowRight className="h-3 w-3 mt-1 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                <span><strong>Skill de compliance</strong> incorporada al proceso de desarrollo: todo prototipo nace con manifiesto de seguridad, clasificacion de datos y roadmap de migracion Azure</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <ArrowRight className="h-3 w-3 mt-1 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                <span><strong>Patrones de codigo portables</strong>: abstracciones de auth, servicios y RLS disenadas para migrar de BaaS agil a Azure con cambios minimos</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <ArrowRight className="h-3 w-3 mt-1 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                <span><strong>Arquitectura de referencia Azure</strong> documentada: Static Web Apps + Functions + PostgreSQL + Entra ID, replicable para cualquier app de gestion interna</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <ArrowRight className="h-3 w-3 mt-1 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                <span><strong>Flujo estandarizado</strong>: Prototipo agil (2-4 sem) → Validacion con usuarios → Decision del comite → Migracion Azure (5-8 sem con AI) → Produccion</span>
+              </li>
+            </ul>
+          </div>
 
           {/* Lo que se conserva */}
           <div
