@@ -20,6 +20,8 @@ import {
   Building2,
   Scale,
   Map,
+  Cloud,
+  ExternalLink,
 } from 'lucide-react'
 
 /* ─────────────── Types ─────────────── */
@@ -144,7 +146,7 @@ function Td({ children }: { children: React.ReactNode }) {
 
 /* ─────────────── Data ─────────────── */
 
-const MANIFEST_VERSION = '1.0'
+const MANIFEST_VERSION = '2.0'
 const MANIFEST_DATE = '2026-02-08'
 const APP_CLASSIFICATION = 'Demostrador / Prototipo funcional'
 const DATA_CLASSIFICATION = 'Baja-Media sensibilidad (datos operativos internos)'
@@ -241,18 +243,21 @@ const migrationRoadmap: MigrationPhase[] = [
     ],
   },
   {
-    phase: 'Fase 3: Migracion a arquitectura conforme',
+    phase: 'Fase 3: Migracion a Microsoft Azure corporativo',
     timeline: '6-12 meses (si se confirma utilidad)',
     risk: 'alto',
     items: [
-      'Evaluar alternativas de backend con ISO 27001 europeo:',
-      '  - Opcion A: Supabase Self-Hosted en OVHcloud/Hetzner (ISO 27001, EU)',
-      '  - Opcion B: PostgreSQL gestionado en AWS eu-west-1 + API propia',
-      '  - Opcion C: Plataforma interna Garrigues (datacenter propio)',
+      'Migrar a entorno Azure de Garrigues (Spain Central):',
+      '  - Azure Database for PostgreSQL Flexible Server (esquema + RLS intactos)',
+      '  - Azure Static Web Apps (frontend React sin cambios)',
+      '  - Azure Functions (API REST reemplazando PostgREST)',
+      '  - Azure Blob Storage (certificados PDF)',
+      'Integrar Microsoft Entra ID (SSO + MFA corporativo Garrigues)',
+      'Adaptar RLS a contexto de sesion Entra ID (variables de sesion)',
+      'Implementar Azure Key Vault para gestion de secretos',
       'Implementar E2EE si el alcance incluye datos sensibles',
-      'Migrar autenticacion a proveedor corporativo (SSO/SAML Garrigues)',
-      'Obtener certificacion ENS si atiende al sector publico',
-      'Auditar arquitectura final por equipo de seguridad Garrigues',
+      'Pentesting + auditoria por equipo de seguridad Garrigues',
+      'Nota: iManage no interviene (app de gestion interna, no documental)',
     ],
   },
 ]
@@ -919,12 +924,193 @@ export function SecurityManifestTab() {
         </CardContent>
       </Card>
 
-      {/* ── 10. Conclusion y firma ── */}
+      {/* ── 10. Migracion a Azure Garrigues ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cloud className="h-5 w-5" style={{ color: 'var(--g-brand-3308)' }} />
+            10. Plan de migracion a Microsoft Azure (entorno Garrigues)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
+            Garrigues opera su infraestructura corporativa sobre <strong>Microsoft Azure</strong> (Spain Central),
+            con certificaciones ISO 27001 y ENS de nivel Alto. La migracion de LIQUIDA360 a este entorno
+            resolveria de forma definitiva todos los GAPs de cumplimiento identificados.
+          </p>
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-sec-100)',
+              borderRadius: 'var(--g-radius-md)',
+              border: '1px solid var(--g-border-default)',
+            }}
+          >
+            <p className="font-medium mb-1" style={{ color: 'var(--g-text-primary)', fontSize: 'var(--g-text-small)' }}>
+              Nota: <strong>iManage (DMS corporativo) no interviene</strong> en esta aplicacion.
+              LIQUIDA360 gestiona datos operativos internos, no documentos del repositorio documental del despacho.
+            </p>
+          </div>
+
+          {/* Mapeo de componentes */}
+          <SectionTitle
+            icon={Server}
+            title="Mapeo de componentes"
+            subtitle="Cada componente actual tiene un equivalente directo en Azure"
+          />
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Componente</Th>
+                <Th>Actual</Th>
+                <Th>Destino Azure</Th>
+                <Th>Esfuerzo</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { component: 'Frontend', current: 'Vercel', azure: 'Azure Static Web Apps', effort: 'bajo' as const },
+                { component: 'Base de datos', current: 'Supabase PostgreSQL', azure: 'Azure DB for PostgreSQL', effort: 'bajo' as const },
+                { component: 'Autenticacion', current: 'Supabase Auth (GoTrue)', azure: 'Microsoft Entra ID (SSO)', effort: 'medio' as const },
+                { component: 'API Backend', current: 'PostgREST (autogenerada)', azure: 'Azure Functions (TypeScript)', effort: 'alto' as const },
+                { component: 'Almacenamiento', current: 'Supabase Storage (S3)', azure: 'Azure Blob Storage', effort: 'medio' as const },
+                { component: 'Realtime', current: 'Supabase Realtime (WS)', azure: 'Azure SignalR Service', effort: 'medio' as const },
+                { component: 'Logica SQL', current: 'Triggers + RLS', azure: 'Sin cambios (PostgreSQL estandar)', effort: 'bajo' as const },
+                { component: 'Secretos', current: '.env + Dashboard', azure: 'Azure Key Vault', effort: 'bajo' as const },
+              ].map((row) => (
+                <tr key={row.component}>
+                  <Td><span className="font-medium">{row.component}</span></Td>
+                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.current}</span></Td>
+                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.azure}</span></Td>
+                  <Td><RiskBadge risk={row.effort} /></Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableWrapper>
+
+          {/* Beneficios */}
+          <SectionTitle
+            icon={ShieldCheck}
+            title="Beneficios de la migracion"
+            subtitle="Resolucion definitiva de GAPs y alineacion con SGSI"
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { title: 'Cumplimiento ISO 27001', desc: 'Azure certificado ISO 27001 + ENS Alto. Eliminacion total del GAP de Supabase.' },
+              { title: 'Soberania del dato', desc: 'Todos los datos en Spain Central (UE). Sin Cloud Act ni transferencias internacionales.' },
+              { title: 'SSO + MFA corporativo', desc: 'Entra ID con credenciales Garrigues. MFA ya existente en la infraestructura.' },
+              { title: 'Seguridad integrada', desc: 'Azure Key Vault, Defender for Cloud, Azure Policy, Azure Monitor.' },
+            ].map((b) => (
+              <div
+                key={b.title}
+                className="p-3 flex items-start gap-2"
+                style={{ backgroundColor: 'var(--g-status-success-bg)', borderRadius: 'var(--g-radius-md)' }}
+              >
+                <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                <div>
+                  <p className="font-medium" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-primary)' }}>{b.title}</p>
+                  <p style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>{b.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Timeline */}
+          <SectionTitle
+            icon={Clock}
+            title="Estimacion de esfuerzo"
+            subtitle="3-4 meses con equipo de 2-3 desarrolladores"
+          />
+          <TableWrapper>
+            <thead>
+              <tr>
+                <Th>Fase</Th>
+                <Th>Duracion</Th>
+                <Th>Alcance</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { phase: 'F1: Infraestructura Azure', duration: '1-2 semanas', scope: 'Provisionar recursos, Entra ID, Key Vault, networking' },
+                { phase: 'F2: Datos y frontend', duration: '2-3 semanas', scope: 'pg_dump/restore, migrar Storage, autenticacion MSAL, CI/CD' },
+                { phase: 'F3: API Backend', duration: '6-8 semanas', scope: 'Azure Functions CRUD, middleware auth, adaptacion RLS' },
+                { phase: 'F4: Validacion', duration: '2-4 semanas', scope: 'Suite E2E (146 tests), pentesting, revision IT Garrigues' },
+              ].map((row) => (
+                <tr key={row.phase}>
+                  <Td><span className="font-medium" style={{ fontSize: 'var(--g-text-small)' }}>{row.phase}</span></Td>
+                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.duration}</span></Td>
+                  <Td><span style={{ fontSize: 'var(--g-text-small)' }}>{row.scope}</span></Td>
+                </tr>
+              ))}
+            </tbody>
+          </TableWrapper>
+
+          {/* Lo que se conserva */}
+          <div
+            className="p-4"
+            style={{
+              backgroundColor: 'var(--g-sec-100)',
+              borderRadius: 'var(--g-radius-md)',
+              borderLeft: '4px solid var(--g-brand-3308)',
+            }}
+          >
+            <p className="font-medium mb-2" style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-primary)' }}>
+              El 70% del codigo se conserva intacto en la migracion:
+            </p>
+            <ul className="flex flex-col gap-1" style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Todo el frontend React + Design System Garrigues
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Esquema SQL, triggers, funciones, RLS (PostgreSQL estandar)
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Suite de tests (266 tests E2E + unitarios)
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-3 w-3 shrink-0" style={{ color: 'var(--g-status-success)' }} />
+                Validaciones Zod, logica de negocio, utilidades
+              </li>
+            </ul>
+          </div>
+
+          {/* Link al documento completo */}
+          <a
+            href="https://github.com/moimene/liquida360/blob/main/docs/azure-migration-roadmap.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-4 transition-colors"
+            style={{
+              backgroundColor: 'var(--g-bg-primary)',
+              borderRadius: 'var(--g-radius-md)',
+              border: '2px solid var(--g-brand-3308)',
+              color: 'var(--g-brand-3308)',
+              textDecoration: 'none',
+            }}
+          >
+            <ExternalLink className="h-5 w-5 shrink-0" />
+            <div>
+              <p className="font-bold" style={{ fontSize: 'var(--g-text-body)' }}>
+                Documento completo: Plan de Migracion a Microsoft Azure
+              </p>
+              <p style={{ fontSize: 'var(--g-text-small)', color: 'var(--g-text-secondary)' }}>
+                Analisis detallado con mapeo componente a componente, codigo de referencia,
+                estimaciones de coste y plan de fases. Ver en docs/azure-migration-roadmap.md
+              </p>
+            </div>
+          </a>
+        </CardContent>
+      </Card>
+
+      {/* ── 11. Conclusion y firma ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Globe className="h-5 w-5" style={{ color: 'var(--g-brand-3308)' }} />
-            10. Conclusion y declaracion
+            11. Conclusion y declaracion
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -956,6 +1142,11 @@ export function SecurityManifestTab() {
               <li className="flex items-start gap-2">
                 <ShieldCheck className="h-4 w-4 mt-0.5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
                 La <strong>clasificacion baja-media</strong> de los datos hace viable el uso como demostrador con las medidas compensatorias descritas.
+              </li>
+              <li className="flex items-start gap-2">
+                <Cloud className="h-4 w-4 mt-0.5 shrink-0" style={{ color: 'var(--g-brand-3308)' }} />
+                La <strong>migracion a Azure corporativo</strong> (Spain Central) esta planificada como Fase 3 y resuelve definitivamente
+                todos los GAPs. El 70% del codigo se conserva intacto.
               </li>
             </ul>
           </div>
