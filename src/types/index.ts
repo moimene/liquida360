@@ -8,4 +8,9 @@ export type Notification = Database['public']['Tables']['notifications']['Row']
 export type AlertConfig = Database['public']['Tables']['alert_configs']['Row']
 export type AuditLog = Database['public']['Tables']['audit_log']['Row']
 
+export type UserProfile = Database['public']['Tables']['user_profiles']['Row']
+export type Conversation = Database['public']['Tables']['conversations']['Row']
+export type ConversationParticipant = Database['public']['Tables']['conversation_participants']['Row']
+export type Message = Database['public']['Tables']['messages']['Row']
+
 export type UserRole = 'pagador' | 'supervisor' | 'financiero' | 'admin' | 'corresponsal'

@@ -284,6 +284,114 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string
+          avatar_url: string | null
+          role: string
+          correspondent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string
+          avatar_url?: string | null
+          role?: string
+          correspondent_id?: string | null
+        }
+        Update: {
+          email?: string
+          full_name?: string
+          avatar_url?: string | null
+          role?: string
+          correspondent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_profiles_correspondent_id_fkey'
+            columns: ['correspondent_id']
+            isOneToOne: false
+            referencedRelation: 'correspondents'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          id: string
+          title: string | null
+          is_group: boolean
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          title?: string | null
+          is_group?: boolean
+          created_by: string
+        }
+        Update: {
+          title?: string | null
+          is_group?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      conversation_participants: {
+        Row: {
+          id: string
+          conversation_id: string
+          user_id: string
+          joined_at: string
+          last_read_at: string
+        }
+        Insert: {
+          conversation_id: string
+          user_id: string
+          last_read_at?: string
+        }
+        Update: {
+          last_read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'conversation_participants_conversation_id_fkey'
+            columns: ['conversation_id']
+            isOneToOne: false
+            referencedRelation: 'conversations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          sender_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          conversation_id: string
+          sender_id: string
+          content: string
+        }
+        Update: {
+          content?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'messages_conversation_id_fkey'
+            columns: ['conversation_id']
+            isOneToOne: false
+            referencedRelation: 'conversations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {}
     Functions: {}

@@ -61,6 +61,11 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 )
+const MessagesPage = lazy(() =>
+  import('@/features/messaging/components/messages-page').then((m) => ({
+    default: m.MessagesPage,
+  })),
+)
 const SettingsPage = lazy(() =>
   import('@/features/settings/components/settings-page').then((m) => ({
     default: m.SettingsPage,
@@ -108,6 +113,11 @@ const PortalNotificationsPage = lazy(() =>
     default: m.PortalNotificationsPage,
   })),
 )
+const PortalMessagesPage = lazy(() =>
+  import('@/features/portal/components/portal-messages-page').then((m) => ({
+    default: m.PortalMessagesPage,
+  })),
+)
 
 function App() {
   const initialize = useAuth((s) => s.initialize)
@@ -142,6 +152,7 @@ function App() {
               <Route path="certificates" element={<PortalCertificatesPage />} />
               <Route path="profile" element={<PortalProfilePage />} />
               <Route path="notifications" element={<PortalNotificationsPage />} />
+              <Route path="messages" element={<PortalMessagesPage />} />
             </Route>
 
             {/* Internal routes (pagador, supervisor, financiero, admin) */}
@@ -176,6 +187,7 @@ function App() {
                 }
               />
               <Route path="notifications" element={<NotificationsPage />} />
+              <Route path="messages" element={<MessagesPage />} />
               <Route path="security" element={<SecurityManifestPage />} />
               <Route
                 path="settings"

@@ -9,6 +9,7 @@ import {
   Receipt,
   CreditCard,
   Bell,
+  MessageSquare,
   Settings,
   Shield,
   LogOut,
@@ -31,6 +32,7 @@ const mainNav: NavItem[] = [
   { label: 'Liquidaciones', path: '/liquidations', icon: Receipt, roles: [...INTERNAL_ROLES] },
   { label: 'Pagos', path: '/payments', icon: CreditCard, roles: ['financiero', 'admin'] },
   { label: 'Notificaciones', path: '/notifications', icon: Bell, roles: [...INTERNAL_ROLES] },
+  { label: 'Mensajes', path: '/messages', icon: MessageSquare, roles: [...INTERNAL_ROLES] },
 ]
 
 const adminNav: NavItem[] = [
