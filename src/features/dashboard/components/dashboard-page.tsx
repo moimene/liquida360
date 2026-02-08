@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { InfoTip } from '@/components/ui/info-tip'
-import { InfoPanel } from '@/components/ui/info-panel'
 import { Clock, Receipt, FileCheck, AlertTriangle, CreditCard, Eye } from 'lucide-react'
 import { DASHBOARD_HELP } from '../constants/help-texts'
 import { useLiquidations } from '@/features/liquidations/hooks/use-liquidations'
@@ -13,11 +12,6 @@ import { usePaymentRequests } from '@/features/payments/hooks/use-payment-reques
 import { useAuth } from '@/features/auth/hooks/use-auth'
 import { getStatusConfig, formatAmount } from '@/lib/liquidation-utils'
 import { getCertificateStatus, formatDate } from '@/lib/certificate-utils'
-import {
-  LiquidationTrendChart,
-  LiquidationStatusChart,
-  CertificateExpiryChart,
-} from './charts'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -125,20 +119,6 @@ export function DashboardPage() {
           />
         )}
       </div>
-
-      {/* Charts */}
-      {!loading && (
-        <>
-        <InfoPanel variant="tip" dismissible dismissKey="dashboard-charts" className="mb-2">{DASHBOARD_HELP.chartsSection}</InfoPanel>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-          <LiquidationTrendChart liquidations={liquidations} />
-          <LiquidationStatusChart liquidations={liquidations} />
-          <div className="lg:col-span-2">
-            <CertificateExpiryChart certificates={certificates} />
-          </div>
-        </div>
-        </>
-      )}
 
       {/* Content Grid */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
