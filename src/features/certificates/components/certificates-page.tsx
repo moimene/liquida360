@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { InfoPanel } from '@/components/ui/info-panel'
 import { CERTIFICATES_HELP } from '../constants/help-texts'
@@ -51,10 +52,18 @@ export function CertificatesPage() {
             Gestiona los certificados y controla su vigencia
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Nuevo certificado
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/certificates/verification-guide">
+            <Button variant="outline">
+              <BookOpen className="h-4 w-4" />
+              Guia de verificacion
+            </Button>
+          </Link>
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Nuevo certificado
+          </Button>
+        </div>
       </div>
 
       <InfoPanel variant="info" dismissible dismissKey="certificates-info">{CERTIFICATES_HELP.pageInfoPanel}</InfoPanel>

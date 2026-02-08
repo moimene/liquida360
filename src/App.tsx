@@ -71,6 +71,11 @@ const SecurityManifestPage = lazy(() =>
     default: m.SecurityManifestPage,
   })),
 )
+const VerificationGuidePage = lazy(() =>
+  import('@/features/certificates/components/verification-guide-page').then((m) => ({
+    default: m.VerificationGuidePage,
+  })),
+)
 
 // Lazy-loaded portal route pages (code splitting)
 const PortalDashboardPage = lazy(() =>
@@ -151,6 +156,7 @@ function App() {
               <Route path="correspondents" element={<CorrespondentsPage />} />
               <Route path="correspondents/:id" element={<CorrespondentDetailPage />} />
               <Route path="certificates" element={<CertificatesPage />} />
+              <Route path="certificates/verification-guide" element={<VerificationGuidePage />} />
               <Route path="liquidations" element={<LiquidationsPage />} />
               <Route path="liquidations/:id" element={<LiquidationDetailPage />} />
               <Route
