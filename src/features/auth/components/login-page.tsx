@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuth } from '../hooks/use-auth'
-import { Building, Users } from 'lucide-react'
+import { Building, Users, FlaskConical } from 'lucide-react'
 
 type AccessMode = 'internal' | 'portal'
 
@@ -217,6 +217,106 @@ export function LoginPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Test credentials table - only shown in portal mode */}
+        {isPortal && (
+          <div
+            className="mt-4 animate-fade-in"
+            style={{
+              border: '1px dashed var(--g-border-subtle)',
+              borderRadius: 'var(--g-radius-lg)',
+              backgroundColor: 'var(--g-surface-card)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              className="flex items-center gap-2 px-4 py-2.5"
+              style={{
+                backgroundColor: 'var(--g-surface-muted)',
+                borderBottom: '1px solid var(--g-border-default)',
+              }}
+            >
+              <FlaskConical className="h-3.5 w-3.5" style={{ color: 'var(--g-text-secondary)' }} />
+              <span
+                className="text-xs font-medium"
+                style={{ color: 'var(--g-text-secondary)' }}
+              >
+                Usuarios de prueba — clic para autocompletar
+              </span>
+            </div>
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--g-border-default)' }}>
+                  <th
+                    className="px-3 py-2 text-left font-medium"
+                    style={{ color: 'var(--g-text-secondary)' }}
+                  >
+                    Despacho
+                  </th>
+                  <th
+                    className="px-3 py-2 text-left font-medium"
+                    style={{ color: 'var(--g-text-secondary)' }}
+                  >
+                    Email
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { country: '🇲🇽 MX', firm: 'Bufete Rodriguez', email: 'corresponsal.mx@test.liquida360.com' },
+                  { country: '🇨🇱 CL', firm: 'Estudio Pacifico', email: 'corresponsal.cl@test.liquida360.com' },
+                  { country: '🇨🇳 CN', firm: 'Zhu & Partners', email: 'corresponsal.cn@test.liquida360.com' },
+                  { country: '🇺🇸 US', firm: 'Thompson & Reed', email: 'corresponsal.us@test.liquida360.com' },
+                  { country: '🇨🇴 CO', firm: 'Mendoza Arias', email: 'corresponsal.co@test.liquida360.com' },
+                ].map((t) => (
+                  <tr
+                    key={t.email}
+                    className="cursor-pointer transition-colors"
+                    style={{ borderBottom: '1px solid var(--g-border-default)' }}
+                    onClick={() => {
+                      setEmail(t.email)
+                      setPassword('Test1234!')
+                      setError(null)
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--g-surface-muted)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent'
+                    }}
+                  >
+                    <td className="px-3 py-2" style={{ color: 'var(--g-text-primary)' }}>
+                      <span className="font-medium">{t.country}</span>
+                      <span className="ml-1.5" style={{ color: 'var(--g-text-secondary)' }}>
+                        {t.firm}
+                      </span>
+                    </td>
+                    <td
+                      className="px-3 py-2 font-mono"
+                      style={{ color: 'var(--g-brand-3308)', fontSize: '10px' }}
+                    >
+                      {t.email}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div
+              className="px-3 py-2 text-center"
+              style={{
+                backgroundColor: 'var(--g-surface-muted)',
+                borderTop: '1px solid var(--g-border-default)',
+              }}
+            >
+              <span
+                className="text-xs font-mono"
+                style={{ color: 'var(--g-text-secondary)' }}
+              >
+                Password: Test1234!
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
