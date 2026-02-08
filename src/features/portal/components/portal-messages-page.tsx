@@ -14,6 +14,7 @@ import { NewConversationDialog } from '@/features/messaging/components/new-conve
 
 export function PortalMessagesPage() {
   const user = useAuth((s) => s.user)
+  const role = useAuth((s) => s.role)
   const {
     conversations,
     loading,
@@ -139,6 +140,7 @@ export function PortalMessagesPage() {
         onClose={() => setShowNewDialog(false)}
         users={users}
         currentUserId={user?.id ?? ''}
+        currentUserRole={role ?? undefined}
         onCreateConversation={handleCreateConversation}
       />
     </div>

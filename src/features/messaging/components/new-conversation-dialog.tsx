@@ -10,6 +10,7 @@ interface NewConversationDialogProps {
   onClose: () => void
   users: UserProfile[]
   currentUserId: string
+  currentUserRole?: string
   onCreateConversation: (
     participantIds: string[],
     title?: string,
@@ -22,6 +23,7 @@ export function NewConversationDialog({
   onClose,
   users,
   currentUserId,
+  currentUserRole,
   onCreateConversation,
 }: NewConversationDialogProps) {
   const [search, setSearch] = useState('')
@@ -30,9 +32,15 @@ export function NewConversationDialog({
 
   const isGroup = selectedIds.length > 1
 
-  // Filter out current user and apply search
+  // Filter out current user, apply role restrictions, and search
   const availableUsers = useMemo(() => {
-    const filtered = users.filter((u) => u.id !== currentUserId)
+    let filtered = users.filter((u) => u.id !== currentUserId)
+
+    // Corresponsales can only message internal users (not other corresponsales)
+    if (currentUserRole === 'corresponsal') {
+      filtered = filtered.filter((u) => u.role !== 'corresponsal')
+    }
+
     if (!search) return filtered
     const lower = search.toLowerCase()
     return filtered.filter(
@@ -41,7 +49,7 @@ export function NewConversationDialog({
         u.email.toLowerCase().includes(lower) ||
         u.role.toLowerCase().includes(lower),
     )
-  }, [users, currentUserId, search])
+  }, [users, currentUserId, currentUserRole, search])
 
   function toggleUser(userId: string) {
     setSelectedIds((prev) =>

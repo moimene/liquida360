@@ -11,6 +11,7 @@ import { NewConversationDialog } from './new-conversation-dialog'
 
 export function MessagesPage() {
   const user = useAuth((s) => s.user)
+  const role = useAuth((s) => s.role)
   const { conversations, loading, fetchConversations, createConversation, subscribeRealtime, unsubscribe } =
     useConversations()
   const { users, fetchUsers } = useUsersList()
@@ -138,6 +139,7 @@ export function MessagesPage() {
         onClose={() => setShowNewDialog(false)}
         users={users}
         currentUserId={user?.id ?? ''}
+        currentUserRole={role ?? undefined}
         onCreateConversation={handleCreateConversation}
       />
     </div>
