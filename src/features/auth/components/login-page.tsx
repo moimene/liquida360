@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuth } from '../hooks/use-auth'
-import { Building, Users, FlaskConical } from 'lucide-react'
+import { Building, Users, FlaskConical, Shield } from 'lucide-react'
 
 type AccessMode = 'internal' | 'portal'
 
@@ -322,6 +322,27 @@ export function LoginPage() {
               Password: {isPortal ? 'Test1234!' : 'Demo2026!'}
             </span>
           </div>
+        </div>
+
+        {/* Security manifest link */}
+        <div className="mt-4 text-center">
+          <Link
+            to="/security"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors"
+            style={{
+              color: 'var(--g-text-secondary)',
+              borderRadius: 'var(--g-radius-md)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--g-brand-3308)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--g-text-secondary)'
+            }}
+          >
+            <Shield className="h-4 w-4" />
+            Manifiesto de Seguridad
+          </Link>
         </div>
       </div>
     </div>

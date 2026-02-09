@@ -136,6 +136,7 @@ function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/pending" element={<PendingApprovalPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/security" element={<SecurityManifestPage />} />
 
             {/* Portal routes (corresponsal only) */}
             <Route
@@ -188,7 +189,6 @@ function App() {
               />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="messages" element={<MessagesPage />} />
-              <Route path="security" element={<SecurityManifestPage />} />
               <Route
                 path="settings"
                 element={
