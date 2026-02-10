@@ -392,9 +392,510 @@ export type Database = {
           },
         ]
       }
+      // ==========================================
+      // G-Invoice domain tables
+      // ==========================================
+      ginv_jobs: {
+        Row: {
+          id: string
+          job_code: string
+          client_code: string
+          client_name: string
+          uttai_status: 'clear' | 'blocked' | 'pending_review'
+          uttai_subject_obliged: boolean | null
+          owner_user_id: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          job_code: string
+          client_code: string
+          client_name: string
+          uttai_status?: 'clear' | 'blocked' | 'pending_review'
+          uttai_subject_obliged?: boolean | null
+          owner_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          job_code?: string
+          client_code?: string
+          client_name?: string
+          uttai_status?: 'clear' | 'blocked' | 'pending_review'
+          uttai_subject_obliged?: boolean | null
+          owner_user_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      ginv_vendors: {
+        Row: {
+          id: string
+          name: string
+          tax_id: string
+          country: string
+          compliance_status: 'compliant' | 'expiring_soon' | 'non_compliant'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          tax_id: string
+          country: string
+          compliance_status?: 'compliant' | 'expiring_soon' | 'non_compliant'
+        }
+        Update: {
+          name?: string
+          tax_id?: string
+          country?: string
+          compliance_status?: 'compliant' | 'expiring_soon' | 'non_compliant'
+        }
+        Relationships: []
+      }
+      ginv_vendor_documents: {
+        Row: {
+          id: string
+          vendor_id: string
+          doc_type: 'tax_residency_certificate' | 'partners_letter' | 'other'
+          issued_at: string | null
+          expires_at: string | null
+          status: 'compliant' | 'expiring_soon' | 'non_compliant'
+          file_path: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          vendor_id: string
+          doc_type: 'tax_residency_certificate' | 'partners_letter' | 'other'
+          issued_at?: string | null
+          expires_at?: string | null
+          status?: 'compliant' | 'expiring_soon' | 'non_compliant'
+          file_path?: string | null
+        }
+        Update: {
+          vendor_id?: string
+          doc_type?: 'tax_residency_certificate' | 'partners_letter' | 'other'
+          issued_at?: string | null
+          expires_at?: string | null
+          status?: 'compliant' | 'expiring_soon' | 'non_compliant'
+          file_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_vendor_documents_vendor_id_fkey'
+            columns: ['vendor_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_vendors'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_intake_items: {
+        Row: {
+          id: string
+          type: 'vendor_invoice' | 'official_fee'
+          vendor_id: string | null
+          job_id: string | null
+          currency: string
+          amount: number
+          invoice_number: string | null
+          invoice_date: string | null
+          concept_text: string | null
+          approver_user_id: string | null
+          uttai_status_snapshot: 'clear' | 'blocked' | 'pending_review' | null
+          vendor_compliance_snapshot: 'compliant' | 'expiring_soon' | 'non_compliant' | null
+          file_path: string | null
+          status:
+            | 'draft'
+            | 'submitted'
+            | 'needs_info'
+            | 'pending_approval'
+            | 'approved'
+            | 'rejected'
+            | 'sent_to_accounting'
+            | 'posted'
+            | 'ready_to_bill'
+            | 'billed'
+            | 'archived'
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          type: 'vendor_invoice' | 'official_fee'
+          vendor_id?: string | null
+          job_id?: string | null
+          currency?: string
+          amount: number
+          invoice_number?: string | null
+          invoice_date?: string | null
+          concept_text?: string | null
+          approver_user_id?: string | null
+          uttai_status_snapshot?: 'clear' | 'blocked' | 'pending_review' | null
+          vendor_compliance_snapshot?: 'compliant' | 'expiring_soon' | 'non_compliant' | null
+          file_path?: string | null
+          status?:
+            | 'draft'
+            | 'submitted'
+            | 'needs_info'
+            | 'pending_approval'
+            | 'approved'
+            | 'rejected'
+            | 'sent_to_accounting'
+            | 'posted'
+            | 'ready_to_bill'
+            | 'billed'
+            | 'archived'
+          created_by: string
+        }
+        Update: {
+          type?: 'vendor_invoice' | 'official_fee'
+          vendor_id?: string | null
+          job_id?: string | null
+          currency?: string
+          amount?: number
+          invoice_number?: string | null
+          invoice_date?: string | null
+          concept_text?: string | null
+          approver_user_id?: string | null
+          uttai_status_snapshot?: 'clear' | 'blocked' | 'pending_review' | null
+          vendor_compliance_snapshot?: 'compliant' | 'expiring_soon' | 'non_compliant' | null
+          file_path?: string | null
+          status?:
+            | 'draft'
+            | 'submitted'
+            | 'needs_info'
+            | 'pending_approval'
+            | 'approved'
+            | 'rejected'
+            | 'sent_to_accounting'
+            | 'posted'
+            | 'ready_to_bill'
+            | 'billed'
+            | 'archived'
+          created_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_intake_items_vendor_id_fkey'
+            columns: ['vendor_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_vendors'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ginv_intake_items_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_jobs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_sap_postings: {
+        Row: {
+          id: string
+          intake_item_id: string
+          sap_reference: string
+          posted_at: string
+          posted_by: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          intake_item_id: string
+          sap_reference: string
+          posted_at: string
+          posted_by: string
+          notes?: string | null
+        }
+        Update: {
+          intake_item_id?: string
+          sap_reference?: string
+          posted_at?: string
+          posted_by?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_sap_postings_intake_item_id_fkey'
+            columns: ['intake_item_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_intake_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_billing_batches: {
+        Row: {
+          id: string
+          job_id: string
+          status: string
+          uttai_subject_obliged: boolean | null
+          total_amount: number | null
+          total_fees: number | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          job_id: string
+          status?: string
+          uttai_subject_obliged?: boolean | null
+          total_amount?: number | null
+          total_fees?: number | null
+          created_by: string
+        }
+        Update: {
+          job_id?: string
+          status?: string
+          uttai_subject_obliged?: boolean | null
+          total_amount?: number | null
+          total_fees?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_billing_batches_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_jobs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_billing_batch_items: {
+        Row: {
+          id: string
+          batch_id: string
+          intake_item_id: string
+          attach_fee: boolean
+          decision: 'emit' | 'transfer' | 'discard' | null
+          created_at: string
+        }
+        Insert: {
+          batch_id: string
+          intake_item_id: string
+          attach_fee?: boolean
+          decision?: 'emit' | 'transfer' | 'discard' | null
+        }
+        Update: {
+          batch_id?: string
+          intake_item_id?: string
+          attach_fee?: boolean
+          decision?: 'emit' | 'transfer' | 'discard' | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_billing_batch_items_batch_id_fkey'
+            columns: ['batch_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_billing_batches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ginv_billing_batch_items_intake_item_id_fkey'
+            columns: ['intake_item_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_intake_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_client_invoices: {
+        Row: {
+          id: string
+          batch_id: string | null
+          sap_invoice_number: string | null
+          sap_invoice_date: string | null
+          pdf_file_path: string | null
+          status:
+            | 'invoice_draft'
+            | 'pending_partner_approval'
+            | 'ready_for_sap'
+            | 'issued'
+            | 'delivered'
+            | 'platform_required'
+            | 'platform_completed'
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id?: string | null
+          sap_invoice_number?: string | null
+          sap_invoice_date?: string | null
+          pdf_file_path?: string | null
+          status?:
+            | 'invoice_draft'
+            | 'pending_partner_approval'
+            | 'ready_for_sap'
+            | 'issued'
+            | 'delivered'
+            | 'platform_required'
+            | 'platform_completed'
+          created_by: string
+        }
+        Update: {
+          batch_id?: string | null
+          sap_invoice_number?: string | null
+          sap_invoice_date?: string | null
+          pdf_file_path?: string | null
+          status?:
+            | 'invoice_draft'
+            | 'pending_partner_approval'
+            | 'ready_for_sap'
+            | 'issued'
+            | 'delivered'
+            | 'platform_required'
+            | 'platform_completed'
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_client_invoices_batch_id_fkey'
+            columns: ['batch_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_billing_batches'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_deliveries: {
+        Row: {
+          id: string
+          client_invoice_id: string
+          delivery_type: string
+          recipients: Record<string, unknown>[]
+          subject: string | null
+          body: string | null
+          attachments: Record<string, unknown>[] | null
+          status: string
+          sent_at: string | null
+          sent_by: string | null
+          created_at: string
+        }
+        Insert: {
+          client_invoice_id: string
+          delivery_type?: string
+          recipients?: Record<string, unknown>[]
+          subject?: string | null
+          body?: string | null
+          attachments?: Record<string, unknown>[] | null
+          status?: string
+          sent_at?: string | null
+          sent_by?: string | null
+        }
+        Update: {
+          client_invoice_id?: string
+          delivery_type?: string
+          recipients?: Record<string, unknown>[]
+          subject?: string | null
+          body?: string | null
+          attachments?: Record<string, unknown>[] | null
+          status?: string
+          sent_at?: string | null
+          sent_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_deliveries_client_invoice_id_fkey'
+            columns: ['client_invoice_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_client_invoices'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_platform_tasks: {
+        Row: {
+          id: string
+          client_invoice_id: string
+          platform_name: string
+          client_platform_code: string | null
+          invoice_number: string | null
+          order_number: string | null
+          notes: string | null
+          evidence_file_path: string | null
+          status: 'pending' | 'in_progress' | 'completed' | 'blocked'
+          assigned_to: string | null
+          sla_due_at: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          client_invoice_id: string
+          platform_name: string
+          client_platform_code?: string | null
+          invoice_number?: string | null
+          order_number?: string | null
+          notes?: string | null
+          evidence_file_path?: string | null
+          status?: 'pending' | 'in_progress' | 'completed' | 'blocked'
+          assigned_to?: string | null
+          sla_due_at?: string | null
+        }
+        Update: {
+          client_invoice_id?: string
+          platform_name?: string
+          client_platform_code?: string | null
+          invoice_number?: string | null
+          order_number?: string | null
+          notes?: string | null
+          evidence_file_path?: string | null
+          status?: 'pending' | 'in_progress' | 'completed' | 'blocked'
+          assigned_to?: string | null
+          sla_due_at?: string | null
+          completed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_platform_tasks_client_invoice_id_fkey'
+            columns: ['client_invoice_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_client_invoices'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_uttai_requests: {
+        Row: {
+          id: string
+          job_id: string
+          requested_by: string
+          status: string
+          resolved_by: string | null
+          resolved_at: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          job_id: string
+          requested_by: string
+          status?: string
+          notes?: string | null
+        }
+        Update: {
+          status?: string
+          resolved_by?: string | null
+          resolved_at?: string | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_uttai_requests_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_jobs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Supabase auto-generated schema
     Views: {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Supabase auto-generated schema
     Functions: {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Supabase auto-generated schema
     Enums: {}
   }
 }
