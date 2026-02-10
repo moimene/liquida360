@@ -86,7 +86,7 @@ export function PortalDashboardPage() {
           icon={Clock}
           label="En proceso"
           value={stats.pending}
-          color="hsl(45, 93%, 47%)"
+          color="var(--status-alert)"
           helpTip={PORTAL_HELP.kpiEnProceso}
         />
         <KPICard
@@ -100,7 +100,7 @@ export function PortalDashboardPage() {
           icon={FileCheck}
           label="Certificados vigentes"
           value={`${stats.validCerts}/${stats.totalCerts}`}
-          color={stats.expiringCerts > 0 ? 'hsl(0, 84%, 60%)' : 'var(--g-brand-3308)'}
+          color={stats.expiringCerts > 0 ? 'var(--status-error)' : 'var(--g-brand-3308)'}
           helpTip={PORTAL_HELP.kpiCertificados}
         />
       </div>
@@ -109,7 +109,7 @@ export function PortalDashboardPage() {
       {stats.expiringCerts > 0 && (
         <Card>
           <CardContent className="flex items-center gap-3 py-4">
-            <AlertTriangle className="h-5 w-5 shrink-0" style={{ color: 'hsl(45, 93%, 47%)' }} />
+            <AlertTriangle className="h-5 w-5 shrink-0" style={{ color: 'var(--status-alert)' }} />
             <p className="text-sm" style={{ color: 'var(--g-text-primary)' }}>
               Tienes <strong>{stats.expiringCerts}</strong> certificado(s) vencido(s) o proximo(s) a
               vencer.{' '}

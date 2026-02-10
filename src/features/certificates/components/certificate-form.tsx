@@ -170,7 +170,7 @@ export function CertificateForm({
               <div
                 className="flex items-start gap-2 p-3 text-xs mt-1"
                 style={{
-                  backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+                  backgroundColor: 'var(--status-error-bg)',
                   borderRadius: 'var(--g-radius-sm)',
                   color: 'var(--status-error)',
                 }}

@@ -229,7 +229,7 @@ function CertificateUploadDialog({
 
   useEffect(() => {
     if (defaultCountry && !country) {
-      setCountry(defaultCountry)
+      queueMicrotask(() => setCountry(defaultCountry))
     }
   }, [defaultCountry, country])
 
@@ -379,8 +379,8 @@ function StatCard({
 }) {
   const colors = {
     success: 'var(--g-brand-3308)',
-    warning: 'hsl(45, 93%, 47%)',
-    destructive: 'hsl(0, 84%, 60%)',
+    warning: 'var(--status-alert)',
+    destructive: 'var(--status-error)',
   }
   const color = colors[variant]
 

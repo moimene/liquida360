@@ -238,7 +238,7 @@ function PortalStatusTimeline({
                         : isCurrent
                           ? 'var(--g-brand-3308)'
                           : isRejected && i === 0
-                            ? 'hsl(0, 84%, 60%)'
+                            ? 'var(--status-error)'
                             : 'var(--g-surface-muted)',
                       color:
                         isCompleted || isCurrent
@@ -290,7 +290,7 @@ function PortalStatusTimeline({
           <div
             className="flex items-center gap-2 mt-4 p-3 text-sm font-medium"
             style={{
-              backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+              backgroundColor: 'var(--status-error-bg)',
               borderRadius: 'var(--g-radius-sm)',
               color: 'var(--status-error)',
             }}

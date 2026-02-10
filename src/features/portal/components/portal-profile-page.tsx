@@ -27,9 +27,11 @@ export function PortalProfilePage() {
 
   useEffect(() => {
     if (correspondent) {
-      setAddress(correspondent.address ?? '')
-      setEmail(correspondent.email ?? '')
-      setPhone(correspondent.phone ?? '')
+      queueMicrotask(() => {
+        setAddress(correspondent.address ?? '')
+        setEmail(correspondent.email ?? '')
+        setPhone(correspondent.phone ?? '')
+      })
     }
   }, [correspondent])
 

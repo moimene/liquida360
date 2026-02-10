@@ -127,7 +127,7 @@ export function LoginPage() {
                   borderRadius: 'var(--g-radius-sm)',
                   backgroundColor: !isPortal ? 'var(--g-surface-primary)' : 'transparent',
                   color: !isPortal ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: !isPortal ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  boxShadow: !isPortal ? 'var(--g-shadow-tab)' : 'none',
                 }}
               >
                 <Users className="h-4 w-4" />
@@ -146,7 +146,7 @@ export function LoginPage() {
                   borderRadius: 'var(--g-radius-sm)',
                   backgroundColor: isPortal ? 'var(--g-surface-primary)' : 'transparent',
                   color: isPortal ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: isPortal ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  boxShadow: isPortal ? 'var(--g-shadow-tab)' : 'none',
                 }}
               >
                 <Building className="h-4 w-4" />
@@ -190,7 +190,7 @@ export function LoginPage() {
                   className="text-sm p-3"
                   style={{
                     color: 'var(--status-error)',
-                    backgroundColor: 'hsl(0, 84%, 60%, 0.1)',
+                    backgroundColor: 'var(--status-error-bg-soft)',
                     borderRadius: 'var(--g-radius-sm)',
                   }}
                 >

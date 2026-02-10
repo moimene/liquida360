@@ -59,8 +59,10 @@ export function CommandPalette() {
   // Focus input when opened
   useEffect(() => {
     if (open) {
-      setQuery('')
-      setActiveIndex(0)
+      queueMicrotask(() => {
+        setQuery('')
+        setActiveIndex(0)
+      })
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open])
@@ -105,7 +107,7 @@ export function CommandPalette() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(4px)' }}
+      style={{ backgroundColor: 'var(--g-overlay)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => {
         if (e.target === e.currentTarget) close()
       }}

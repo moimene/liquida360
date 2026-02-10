@@ -33,11 +33,11 @@ export function PendingApprovalPage() {
             <div
               className="flex h-16 w-16 items-center justify-center"
               style={{
-                backgroundColor: 'hsl(45, 93%, 47%, 0.1)',
+                backgroundColor: 'var(--status-alert-bg-soft)',
                 borderRadius: 'var(--g-radius-full)',
               }}
             >
-              <Clock className="h-8 w-8" style={{ color: 'hsl(45, 93%, 47%)' }} />
+              <Clock className="h-8 w-8" style={{ color: 'var(--status-alert)' }} />
             </div>
 
             <div className="text-center">

@@ -85,13 +85,13 @@ export function CorrespondentsPage() {
         <div
           className="flex items-center gap-3 p-4"
           style={{
-            backgroundColor: 'hsl(45, 93%, 47%, 0.08)',
+            backgroundColor: 'var(--status-alert-bg)',
             borderRadius: 'var(--g-radius-md)',
-            border: '1px solid hsl(45, 93%, 47%, 0.25)',
+            border: '1px solid color-mix(in srgb, var(--status-alert) 25%, transparent)',
           }}
           role="alert"
         >
-          <UserCheck className="h-5 w-5 shrink-0" style={{ color: 'hsl(45, 93%, 47%)' }} />
+          <UserCheck className="h-5 w-5 shrink-0" style={{ color: 'var(--status-alert)' }} />
           <span className="text-sm font-medium" style={{ color: 'var(--g-text-primary)' }}>
             {pendingCount === 1
               ? 'Hay 1 corresponsal pendiente de aprobación.'

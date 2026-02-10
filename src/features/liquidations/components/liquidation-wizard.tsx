@@ -465,7 +465,7 @@ export function LiquidationWizard({
               <div
                 className="flex items-start gap-2 p-3 text-xs"
                 style={{
-                  backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+                  backgroundColor: 'var(--status-error-bg)',
                   borderRadius: 'var(--g-radius-sm)',
                   color: 'var(--status-error)',
                 }}

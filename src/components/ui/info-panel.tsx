@@ -34,7 +34,7 @@ const variantConfig = {
   },
   warning: {
     icon: AlertTriangle,
-    backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+    backgroundColor: 'var(--status-error-bg)',
     borderColor: 'var(--status-error)',
     iconColor: 'var(--status-error)',
   },
@@ -53,7 +53,7 @@ export function InfoPanel({
   useEffect(() => {
     if (dismissKey) {
       const stored = localStorage.getItem(`${DISMISS_PREFIX}${dismissKey}`)
-      if (stored === 'true') setDismissed(true)
+      if (stored === 'true') queueMicrotask(() => setDismissed(true))
     }
   }, [dismissKey])
 

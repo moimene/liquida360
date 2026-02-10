@@ -212,7 +212,7 @@ export function DashboardPage() {
                   <div
                     className="flex items-center gap-3 p-3"
                     style={{
-                      backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+                      backgroundColor: 'var(--status-error-bg)',
                       borderRadius: 'var(--g-radius-sm)',
                     }}
                   >
@@ -230,7 +230,7 @@ export function DashboardPage() {
                   <div
                     className="flex items-center gap-3 p-3"
                     style={{
-                      backgroundColor: 'hsl(45, 93%, 47%, 0.08)',
+                      backgroundColor: 'var(--status-alert-bg)',
                       borderRadius: 'var(--g-radius-sm)',
                     }}
                   >

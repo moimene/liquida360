@@ -50,6 +50,17 @@
   --status-warning: #878989;
   --status-error: hsl(0, 84%, 60%);
   --status-info: #596f7b;
+  --status-alert: hsl(45, 93%, 47%);
+
+  /* Estado – fondos semitransparentes */
+  --status-error-bg: hsl(0, 84%, 60%, 0.08);
+  --status-error-bg-soft: hsl(0, 84%, 60%, 0.1);
+  --status-alert-bg: hsl(45, 93%, 47%, 0.08);
+  --status-alert-bg-soft: hsl(45, 93%, 47%, 0.1);
+
+  /* Overlay / shadow utilitarios */
+  --g-overlay: rgba(0, 0, 0, 0.5);
+  --g-shadow-tab: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   /* ========================================
      ESPACIADO (Grid Base: 4px)

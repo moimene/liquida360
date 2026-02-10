@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div
             className="flex h-16 w-16 items-center justify-center"
             style={{
-              backgroundColor: 'hsl(0, 84%, 60%, 0.08)',
+              backgroundColor: 'var(--status-error-bg)',
               borderRadius: 'var(--g-radius-full)',
             }}
           >

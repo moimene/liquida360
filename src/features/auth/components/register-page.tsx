@@ -158,7 +158,7 @@ export function RegisterPage() {
                   borderRadius: 'var(--g-radius-sm)',
                   backgroundColor: !isCorrespondent ? 'var(--g-surface-primary)' : 'transparent',
                   color: !isCorrespondent ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: !isCorrespondent ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  boxShadow: !isCorrespondent ? 'var(--g-shadow-tab)' : 'none',
                 }}
               >
                 <Users className="h-4 w-4" />
@@ -177,7 +177,7 @@ export function RegisterPage() {
                   borderRadius: 'var(--g-radius-sm)',
                   backgroundColor: isCorrespondent ? 'var(--g-surface-primary)' : 'transparent',
                   color: isCorrespondent ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: isCorrespondent ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  boxShadow: isCorrespondent ? 'var(--g-shadow-tab)' : 'none',
                 }}
               >
                 <Building className="h-4 w-4" />
@@ -304,7 +304,7 @@ export function RegisterPage() {
                   className="text-sm p-3"
                   style={{
                     color: 'var(--status-error)',
-                    backgroundColor: 'hsl(0, 84%, 60%, 0.1)',
+                    backgroundColor: 'var(--status-error-bg-soft)',
                     borderRadius: 'var(--g-radius-sm)',
                   }}
                 >

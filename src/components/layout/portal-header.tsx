@@ -172,7 +172,7 @@ export function PortalHeader() {
               onClick={handleSignOut}
               className="flex items-center gap-3 px-3 py-2.5 text-sm mt-2"
               style={{
-                color: 'hsl(0, 84%, 60%)',
+                color: 'var(--status-error)',
                 borderRadius: 'var(--g-radius-md)',
               }}
             >
