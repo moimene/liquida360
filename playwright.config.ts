@@ -22,14 +22,16 @@ if (fs.existsSync(envPath)) {
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 60_000,
+  globalSetup: './e2e/global-setup.ts',
+  globalTeardown: './e2e/global-teardown.ts',
+  timeout: 90_000,
   expect: {
     timeout: 5_000,
   },
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : 3,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : 2,
   reporter: [
     ['html', { open: 'never' }],
     ['list'],

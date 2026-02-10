@@ -96,6 +96,199 @@ export async function createTestLiquidation(data: {
   return liq
 }
 
+// --- G-Invoice helpers ---
+
+export async function createTestGInvUser(
+  email: string,
+  password: string,
+  ginvRole: string,
+  extraMeta?: Record<string, string>,
+) {
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    // G-Invoice users also need a base 'role' so the login page
+    // doesn't redirect them to /pending (it only checks role, not ginv_role)
+    app_metadata: { role: 'admin', ginv_role: ginvRole, ...extraMeta },
+  })
+  if (error) throw new Error(`Failed to create G-Invoice test user: ${error.message}`)
+  return data.user
+}
+
+export async function createTestGInvJob(data: {
+  job_code: string
+  client_code: string
+  client_name: string
+  uttai_status?: string
+  status?: string
+}) {
+  const { data: job, error } = await supabaseAdmin
+    .from('ginv_jobs')
+    .upsert(
+      {
+        job_code: data.job_code,
+        client_code: data.client_code,
+        client_name: data.client_name,
+        uttai_status: data.uttai_status ?? 'clear',
+        status: data.status ?? 'active',
+      },
+      { onConflict: 'job_code' },
+    )
+    .select()
+    .single()
+  if (error) throw new Error(`Failed to create test job: ${error.message}`)
+  return job
+}
+
+export async function createTestGInvVendor(data: {
+  name: string
+  tax_id: string
+  country: string
+  compliance_status?: string
+}) {
+  const { data: vendor, error } = await supabaseAdmin
+    .from('ginv_vendors')
+    .insert({
+      name: data.name,
+      tax_id: data.tax_id,
+      country: data.country,
+      compliance_status: data.compliance_status ?? 'compliant',
+    })
+    .select()
+    .single()
+  if (error) throw new Error(`Failed to create test vendor: ${error.message}`)
+  return vendor
+}
+
+export async function createTestIntakeItem(data: {
+  type: 'vendor_invoice' | 'official_fee'
+  job_id: string
+  vendor_id?: string
+  amount: number
+  currency: string
+  invoice_number?: string
+  concept_text?: string
+  status?: string
+  created_by: string
+}) {
+  const { data: item, error } = await supabaseAdmin
+    .from('ginv_intake_items')
+    .insert({
+      type: data.type,
+      job_id: data.job_id,
+      vendor_id: data.vendor_id ?? null,
+      amount: data.amount,
+      currency: data.currency,
+      invoice_number: data.invoice_number ?? null,
+      concept_text: data.concept_text ?? null,
+      status: data.status ?? 'draft',
+      created_by: data.created_by,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(`Failed to create test intake item: ${error.message}`)
+  return item
+}
+
+export async function createTestBillingBatch(data: {
+  job_id: string
+  created_by: string
+  status?: string
+  uttai_subject_obliged?: boolean
+}) {
+  const { data: batch, error } = await supabaseAdmin
+    .from('ginv_billing_batches')
+    .insert({
+      job_id: data.job_id,
+      created_by: data.created_by,
+      status: data.status ?? 'open',
+      uttai_subject_obliged: data.uttai_subject_obliged ?? null,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(`Failed to create test billing batch: ${error.message}`)
+  return batch
+}
+
+export async function createTestClientInvoice(data: {
+  batch_id?: string
+  status?: string
+  sap_invoice_number?: string
+  created_by: string
+}) {
+  const { data: invoice, error } = await supabaseAdmin
+    .from('ginv_client_invoices')
+    .insert({
+      batch_id: data.batch_id ?? null,
+      status: data.status ?? 'invoice_draft',
+      sap_invoice_number: data.sap_invoice_number ?? null,
+      created_by: data.created_by,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(`Failed to create test client invoice: ${error.message}`)
+  return invoice
+}
+
+export async function cleanupGInvTestData(prefix: string) {
+  // Delete in FK order (children first)
+  await supabaseAdmin.from('ginv_platform_tasks').delete().ilike('platform_name', `${prefix}%`)
+
+  const { data: invoices } = await supabaseAdmin
+    .from('ginv_client_invoices')
+    .select('id')
+    .ilike('sap_invoice_number', `${prefix}%`)
+  if (invoices?.length) {
+    const invIds = invoices.map((i) => i.id)
+    await supabaseAdmin.from('ginv_deliveries').delete().in('client_invoice_id', invIds)
+    await supabaseAdmin.from('ginv_client_invoices').delete().in('id', invIds)
+  }
+
+  const { data: testJobs } = await supabaseAdmin
+    .from('ginv_jobs')
+    .select('id')
+    .ilike('job_code', `${prefix}%`)
+  if (testJobs?.length) {
+    const jobIds = testJobs.map((j) => j.id)
+    const { data: batches } = await supabaseAdmin
+      .from('ginv_billing_batches')
+      .select('id')
+      .in('job_id', jobIds)
+    if (batches?.length) {
+      const batchIds = batches.map((b) => b.id)
+      await supabaseAdmin.from('ginv_billing_batch_items').delete().in('batch_id', batchIds)
+      await supabaseAdmin.from('ginv_billing_batches').delete().in('id', batchIds)
+    }
+  }
+
+  const { data: intakeItems } = await supabaseAdmin
+    .from('ginv_intake_items')
+    .select('id')
+    .ilike('concept_text', `${prefix}%`)
+  if (intakeItems?.length) {
+    const itemIds = intakeItems.map((i) => i.id)
+    await supabaseAdmin.from('ginv_sap_postings').delete().in('intake_item_id', itemIds)
+    await supabaseAdmin.from('ginv_intake_items').delete().in('id', itemIds)
+  }
+
+  if (testJobs?.length) {
+    const jobIds = testJobs.map((j) => j.id)
+    await supabaseAdmin.from('ginv_uttai_requests').delete().in('job_id', jobIds)
+    await supabaseAdmin.from('ginv_jobs').delete().in('id', jobIds)
+  }
+
+  const { data: vendors } = await supabaseAdmin
+    .from('ginv_vendors')
+    .select('id')
+    .ilike('name', `${prefix}%`)
+  if (vendors?.length) {
+    const vendorIds = vendors.map((v) => v.id)
+    await supabaseAdmin.from('ginv_vendor_documents').delete().in('vendor_id', vendorIds)
+    await supabaseAdmin.from('ginv_vendors').delete().in('id', vendorIds)
+  }
+}
+
 export async function cleanupTestData(prefix: string) {
   // Delete liquidations with test prefix in concept
   await supabaseAdmin.from('liquidations').delete().ilike('concept', `${prefix}%`)
