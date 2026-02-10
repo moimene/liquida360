@@ -2,9 +2,9 @@
 # LIQUIDA360 - Create demo users for each role
 # Uses Supabase Admin API with service_role key
 
-SUPABASE_URL="https://vrzmkxjvzjphdeshmmzl.supabase.co"
-SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZyem1reGp2empwaGRlc2htbXpsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDQxMTIzMywiZXhwIjoyMDg1OTg3MjMzfQ.yXK7qrpn1_bSi9FoOiTn3ZOMzKQGvH2qQMMRYLCtzIE"
-PASSWORD="Demo2026!"
+SUPABASE_URL="${SUPABASE_URL:?Missing SUPABASE_URL env var}"
+SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:?Missing SUPABASE_SERVICE_ROLE_KEY env var}"
+PASSWORD="${DEMO_PASSWORD:-Demo2026!}"
 
 create_user() {
   local email=$1
