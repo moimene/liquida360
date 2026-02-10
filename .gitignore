@@ -35,5 +35,16 @@ dist-ssr
 /playwright/.cache/
 e2e/.env.test
 
-# Agent config
+# Agent / IDE config
 .agent/
+.agents/
+.claude/
+.windsurf/
+skills/
+
+# Vercel env
+.env.vercel
+
+# Reference docs (not source)
+g_invoice datos test/
+liquida360_docs/
