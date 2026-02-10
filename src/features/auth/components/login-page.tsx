@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useAuth } from '../hooks/use-auth'
-import { Building, Users, FlaskConical, Shield } from 'lucide-react'
+import { Building, Users, FlaskConical, Shield, FileSpreadsheet } from 'lucide-react'
 
-type AccessMode = 'internal' | 'portal'
+type AccessMode = 'internal' | 'portal' | 'ginvoice'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -35,6 +35,7 @@ export function LoginPage() {
 
     // signIn() now updates the store directly, so role is immediately available
     const currentRole = useAuth.getState().role
+    const currentGInvRole = useAuth.getState().ginvRole
 
     setLoading(false)
 
@@ -48,6 +49,15 @@ export function LoginPage() {
         // Internal user tried to access portal
         await useAuth.getState().signOut()
         setError('Esta cuenta no tiene acceso al portal de corresponsales.')
+      }
+    } else if (accessMode === 'ginvoice') {
+      if (currentGInvRole) {
+        navigate('/g-invoice')
+      } else if (!currentRole) {
+        navigate('/pending')
+      } else {
+        await useAuth.getState().signOut()
+        setError('Esta cuenta no tiene acceso a G-Invoice.')
       }
     } else {
       // accessMode === 'internal'
@@ -72,6 +82,7 @@ export function LoginPage() {
   }
 
   const isPortal = accessMode === 'portal'
+  const isGInvoice = accessMode === 'ginvoice'
 
   return (
     <div
@@ -100,13 +111,15 @@ export function LoginPage() {
             <CardDescription>
               {isPortal
                 ? 'Accede al portal de tu despacho'
-                : 'Introduce tus credenciales para acceder'}
+                : isGInvoice
+                  ? 'Accede al modulo de facturacion G-Invoice'
+                  : 'Introduce tus credenciales para acceder'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {/* Access mode selector */}
             <div
-              className="grid grid-cols-2 gap-1 p-1 mb-5"
+              className="grid grid-cols-3 gap-1 p-1 mb-5"
               style={{
                 backgroundColor: 'var(--g-surface-secondary)',
                 borderRadius: 'var(--g-radius-md)',
@@ -114,44 +127,35 @@ export function LoginPage() {
               role="tablist"
               aria-label="Tipo de acceso"
             >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={!isPortal}
-                onClick={() => {
-                  setAccessMode('internal')
-                  setError(null)
-                }}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all"
-                style={{
-                  borderRadius: 'var(--g-radius-sm)',
-                  backgroundColor: !isPortal ? 'var(--g-surface-primary)' : 'transparent',
-                  color: !isPortal ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: !isPortal ? 'var(--g-shadow-tab)' : 'none',
-                }}
-              >
-                <Users className="h-4 w-4" />
-                Interno
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={isPortal}
-                onClick={() => {
-                  setAccessMode('portal')
-                  setError(null)
-                }}
-                className="flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium transition-all"
-                style={{
-                  borderRadius: 'var(--g-radius-sm)',
-                  backgroundColor: isPortal ? 'var(--g-surface-primary)' : 'transparent',
-                  color: isPortal ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
-                  boxShadow: isPortal ? 'var(--g-shadow-tab)' : 'none',
-                }}
-              >
-                <Building className="h-4 w-4" />
-                Corresponsal
-              </button>
+              {([
+                { mode: 'internal' as const, icon: Users, label: 'Interno' },
+                { mode: 'portal' as const, icon: Building, label: 'Corresponsal' },
+                { mode: 'ginvoice' as const, icon: FileSpreadsheet, label: 'G-Invoice' },
+              ]).map(({ mode, icon: Icon, label }) => {
+                const isActive = accessMode === mode
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => {
+                      setAccessMode(mode)
+                      setError(null)
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-2.5 px-2 text-xs font-medium transition-all"
+                    style={{
+                      borderRadius: 'var(--g-radius-sm)',
+                      backgroundColor: isActive ? 'var(--g-surface-primary)' : 'transparent',
+                      color: isActive ? 'var(--g-brand-3308)' : 'var(--g-text-secondary)',
+                      boxShadow: isActive ? 'var(--g-shadow-tab)' : 'none',
+                    }}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                )
+              })}
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -162,7 +166,7 @@ export function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={isPortal ? 'email@despacho.com' : 'usuario@empresa.com'}
+                  placeholder={isPortal ? 'email@despacho.com' : isGInvoice ? 'usuario@ginvoice.com' : 'usuario@empresa.com'}
                   required
                   autoComplete="email"
                   error={!!error}
@@ -199,7 +203,7 @@ export function LoginPage() {
               )}
 
               <Button type="submit" loading={loading} className="w-full mt-2">
-                {loading ? 'Accediendo...' : isPortal ? 'Acceder al portal' : 'Acceder'}
+                {loading ? 'Accediendo...' : isPortal ? 'Acceder al portal' : isGInvoice ? 'Acceder a G-Invoice' : 'Acceder'}
               </Button>
             </form>
 
@@ -250,7 +254,7 @@ export function LoginPage() {
                   className="px-3 py-2 text-left font-medium"
                   style={{ color: 'var(--g-text-secondary)' }}
                 >
-                  {isPortal ? 'Despacho' : 'Rol'}
+                  {isPortal ? 'Despacho' : isGInvoice ? 'Perfil' : 'Rol'}
                 </th>
                 <th
                   className="px-3 py-2 text-left font-medium"
@@ -269,12 +273,20 @@ export function LoginPage() {
                     { badge: '🇺🇸 US', label: 'Thompson & Reed', email: 'corresponsal.us@test.liquida360.com', pw: 'Test1234!' },
                     { badge: '🇨🇴 CO', label: 'Mendoza Arias', email: 'corresponsal.co@test.liquida360.com', pw: 'Test1234!' },
                   ]
-                : [
-                    { badge: 'Admin', label: 'Pedro Martinez', email: 'admin@liquida360.demo', pw: 'Demo2026!' },
-                    { badge: 'Supervisor', label: 'Carlos Lopez', email: 'supervisor@liquida360.demo', pw: 'Demo2026!' },
-                    { badge: 'Pagador', label: 'Ana Garcia', email: 'pagador@liquida360.demo', pw: 'Demo2026!' },
-                    { badge: 'Financiero', label: 'Maria Torres', email: 'financiero@liquida360.demo', pw: 'Demo2026!' },
-                  ]
+                : isGInvoice
+                  ? [
+                      { badge: 'Admin', label: 'Admin GInv', email: 'ginv.admin@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Operador', label: 'Intake Ops', email: 'ginv.operador@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Socio', label: 'Aprobador', email: 'ginv.socio@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'BPO', label: 'Facturacion', email: 'ginv.bpo@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Compliance', label: 'UTTAI', email: 'ginv.compliance@liquida360.demo', pw: 'Demo2026!' },
+                    ]
+                  : [
+                      { badge: 'Admin', label: 'Pedro Martinez', email: 'admin@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Supervisor', label: 'Carlos Lopez', email: 'supervisor@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Pagador', label: 'Ana Garcia', email: 'pagador@liquida360.demo', pw: 'Demo2026!' },
+                      { badge: 'Financiero', label: 'Maria Torres', email: 'financiero@liquida360.demo', pw: 'Demo2026!' },
+                    ]
               ).map((t) => (
                 <tr
                   key={t.email}
@@ -319,7 +331,7 @@ export function LoginPage() {
               className="text-xs font-mono"
               style={{ color: 'var(--g-text-secondary)' }}
             >
-              Password: {isPortal ? 'Test1234!' : 'Demo2026!'}
+              Password: {isPortal ? 'Test1234!' : 'Demo2026!'}{isGInvoice && ' — Navega a /g-invoice'}
             </span>
           </div>
         </div>
