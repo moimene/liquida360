@@ -15,6 +15,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  FileSpreadsheet,
 } from 'lucide-react'
 import type { UserRole } from '@/types'
 
@@ -45,7 +46,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
-  const { user, role, signOut } = useAuth()
+  const { user, role, ginvRole, signOut } = useAuth()
   const navigate = useNavigate()
 
   function canAccess(item: NavItem): boolean {
@@ -131,6 +132,24 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             {adminNav.filter(canAccess).map((item) => (
               <SidebarItem key={item.path} item={item} collapsed={collapsed} />
             ))}
+          </div>
+        )}
+
+        {/* G-Invoice workspace link - only visible if user has ginvRole */}
+        {ginvRole && (
+          <div className="flex flex-col gap-1 mt-6">
+            {!collapsed && (
+              <span
+                className="px-3 mb-2 text-[10px] font-medium uppercase tracking-wider"
+                style={{ color: 'hsl(var(--sidebar-foreground) / 0.5)' }}
+              >
+                Workspaces
+              </span>
+            )}
+            <SidebarItem
+              item={{ label: 'G-Invoice', path: '/g-invoice', icon: FileSpreadsheet }}
+              collapsed={collapsed}
+            />
           </div>
         )}
       </nav>
