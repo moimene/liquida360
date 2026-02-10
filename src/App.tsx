@@ -1,7 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'sonner'
-import { AppLayout } from '@/components/layout'
+import { AppLayout, GInvoiceLayout } from '@/components/layout'
 import { PortalLayout } from '@/components/layout'
 import {
   LoginPage,
@@ -10,6 +10,7 @@ import {
   AuthCallbackPage,
   ProtectedRoute,
   PortalRoute,
+  GInvoiceRoute,
   useAuth,
 } from '@/features/auth'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -119,6 +120,63 @@ const PortalMessagesPage = lazy(() =>
   })),
 )
 
+// Lazy-loaded G-Invoice route pages (code splitting)
+const GInvoiceDashboardPage = lazy(() =>
+  import('@/features/ginvoice/components/ginvoice-dashboard-page').then((m) => ({
+    default: m.GInvoiceDashboardPage,
+  })),
+)
+const GInvJobsPage = lazy(() =>
+  import('@/features/ginvoice/components/jobs-page').then((m) => ({
+    default: m.JobsPage,
+  })),
+)
+const GInvVendorsPage = lazy(() =>
+  import('@/features/ginvoice/components/vendors-page').then((m) => ({
+    default: m.VendorsPage,
+  })),
+)
+const GInvVendorCompliancePage = lazy(() =>
+  import('@/features/ginvoice/components/vendor-compliance-page').then((m) => ({
+    default: m.VendorCompliancePage,
+  })),
+)
+const GInvIntakePage = lazy(() =>
+  import('@/features/ginvoice/components/intake-page').then((m) => ({
+    default: m.IntakePage,
+  })),
+)
+const GInvUttaiPage = lazy(() =>
+  import('@/features/ginvoice/components/uttai-page').then((m) => ({
+    default: m.UttaiPage,
+  })),
+)
+const GInvAccountingPage = lazy(() =>
+  import('@/features/ginvoice/components/accounting-page').then((m) => ({
+    default: m.AccountingPage,
+  })),
+)
+const GInvBillingPage = lazy(() =>
+  import('@/features/ginvoice/components/billing-page').then((m) => ({
+    default: m.BillingPage,
+  })),
+)
+const GInvInvoicesPage = lazy(() =>
+  import('@/features/ginvoice/components/invoices-page').then((m) => ({
+    default: m.InvoicesPage,
+  })),
+)
+const GInvDeliveryPage = lazy(() =>
+  import('@/features/ginvoice/components/delivery-page').then((m) => ({
+    default: m.DeliveryPage,
+  })),
+)
+const GInvPlatformsPage = lazy(() =>
+  import('@/features/ginvoice/components/platforms-page').then((m) => ({
+    default: m.PlatformsPage,
+  })),
+)
+
 function App() {
   const initialize = useAuth((s) => s.initialize)
 
@@ -154,6 +212,28 @@ function App() {
               <Route path="profile" element={<PortalProfilePage />} />
               <Route path="notifications" element={<PortalNotificationsPage />} />
               <Route path="messages" element={<PortalMessagesPage />} />
+            </Route>
+
+            {/* G-Invoice routes (ginv_* roles) */}
+            <Route
+              path="/g-invoice"
+              element={
+                <GInvoiceRoute>
+                  <GInvoiceLayout />
+                </GInvoiceRoute>
+              }
+            >
+              <Route index element={<GInvoiceDashboardPage />} />
+              <Route path="jobs" element={<GInvJobsPage />} />
+              <Route path="vendors" element={<GInvVendorsPage />} />
+              <Route path="vendors/:id" element={<GInvVendorCompliancePage />} />
+              <Route path="intake" element={<GInvIntakePage />} />
+              <Route path="uttai" element={<GInvUttaiPage />} />
+              <Route path="accounting" element={<GInvAccountingPage />} />
+              <Route path="billing" element={<GInvBillingPage />} />
+              <Route path="invoices" element={<GInvInvoicesPage />} />
+              <Route path="delivery" element={<GInvDeliveryPage />} />
+              <Route path="platforms" element={<GInvPlatformsPage />} />
             </Route>
 
             {/* Internal routes (pagador, supervisor, financiero, admin) */}

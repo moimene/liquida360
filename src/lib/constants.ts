@@ -37,3 +37,21 @@ export const USER_ROLES = {
 } as const
 
 export const INTERNAL_ROLES = ['pagador', 'supervisor', 'financiero', 'admin'] as const
+
+export const GINVOICE_ROLES = {
+  OPERADOR: 'ginv_operador',
+  SOCIO_APROBADOR: 'ginv_socio_aprobador',
+  BPO_PROVEEDORES: 'ginv_bpo_proveedores',
+  BPO_FACTURACION: 'ginv_bpo_facturacion',
+  COMPLIANCE_UTTAI: 'ginv_compliance_uttai',
+  ADMIN: 'ginv_admin',
+} as const
+
+export const GINVOICE_ROLES_LIST = [
+  'ginv_operador',
+  'ginv_socio_aprobador',
+  'ginv_bpo_proveedores',
+  'ginv_bpo_facturacion',
+  'ginv_compliance_uttai',
+  'ginv_admin',
+] as const

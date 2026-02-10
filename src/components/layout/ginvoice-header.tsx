@@ -3,12 +3,8 @@ import { Badge } from '@/components/ui/badge'
 import { NotificationBell } from '@/features/notifications/components/notification-bell'
 import { WorkspaceSwitcher } from './workspace-switcher'
 
-interface HeaderProps {
-  title: string
-}
-
-export function Header({ title }: HeaderProps) {
-  const { user, role } = useAuth()
+export function GInvoiceHeader() {
+  const { user, ginvRole } = useAuth()
 
   return (
     <header
@@ -20,17 +16,6 @@ export function Header({ title }: HeaderProps) {
     >
       <div className="flex items-center gap-4">
         <WorkspaceSwitcher />
-        <div
-          className="h-6"
-          style={{ borderLeft: '1px solid var(--g-border-default)' }}
-          aria-hidden="true"
-        />
-        <h1
-          className="font-bold"
-          style={{ fontSize: 'var(--g-text-h3)', color: 'var(--g-text-primary)' }}
-        >
-          {title}
-        </h1>
       </div>
 
       <div className="flex items-center gap-3">
@@ -49,7 +34,9 @@ export function Header({ title }: HeaderProps) {
             >
               {user.email?.[0]?.toUpperCase() ?? 'U'}
             </div>
-            {role && <Badge variant="secondary">{role}</Badge>}
+            {ginvRole && (
+              <Badge variant="secondary">{ginvRole.replace('ginv_', '')}</Badge>
+            )}
           </div>
         )}
       </div>
