@@ -20,6 +20,13 @@ if (fs.existsSync(envPath)) {
   }
 }
 
+const baseURL = process.env.BASE_URL || 'http://127.0.0.1:4173'
+const parsedBaseURL = new URL(baseURL)
+const webHost = parsedBaseURL.hostname || '127.0.0.1'
+const webPort =
+  parsedBaseURL.port || (parsedBaseURL.protocol === 'https:' ? '443' : '80')
+const devServerCommand = `npm run dev -- --host ${webHost} --port ${webPort}`
+
 export default defineConfig({
   testDir: './e2e',
   globalSetup: './e2e/global-setup.ts',
@@ -38,7 +45,7 @@ export default defineConfig({
     ...(process.env.CI ? [['junit', { outputFile: 'test-results/results.xml' }] as const] : []),
   ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:5173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -67,9 +74,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    command: devServerCommand,
+    url: baseURL,
+    // Avoid binding tests to an unrelated app that already runs on the same port.
+    reuseExistingServer: process.env.PW_REUSE_SERVER === '1',
     timeout: 60_000,
   },
 })

@@ -19,14 +19,15 @@ test.describe('G-Invoice Dashboard', () => {
     await dashboard.goto()
     await page.waitForLoadState('networkidle')
     await expect(dashboard.roleDisplay).toBeVisible()
-    await expect(page.getByText('ginv_admin')).toBeVisible()
+    await expect(dashboard.roleDisplay).toContainText('ginv_admin')
   })
 
-  test('should display info card about future sprints', async ({ page }) => {
+  test('should display work queue and alerts sections', async ({ page }) => {
     const dashboard = new GInvDashboardPage(page)
     await dashboard.goto()
     await page.waitForLoadState('networkidle')
     await expect(dashboard.infoCard).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Alertas' })).toBeVisible()
   })
 
   test('@responsive should display correctly on mobile', async ({ page }) => {

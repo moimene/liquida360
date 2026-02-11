@@ -114,27 +114,60 @@ export const test = base.extend<AuthFixtures>({
 
   loginAsCorresponsal: async ({ page }, use) => {
     await use(async () => {
-      const maxRetries = 5
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        if (attempt > 0) {
-          await page.waitForTimeout(3000 * attempt)
-        }
-        await page.goto('/login')
-        await page.getByRole('tab', { name: 'Corresponsal' }).click()
-        await page.locator('#email').fill(process.env.TEST_CORRESPONSAL_EMAIL!)
-        await page.locator('#password').fill(process.env.TEST_CORRESPONSAL_PASSWORD!)
-        await page.getByRole('button', { name: /Acceder al portal/i }).click()
-        try {
-          await page.waitForURL('/portal', { timeout: 15_000 })
-          return
-        } catch {
-          const rateLimited = await page.getByText(/rate limit/i).isVisible().catch(() => false)
-          if (rateLimited && attempt < maxRetries - 1) {
-            continue
+      const candidates = [
+        {
+          email: process.env.TEST_CORRESPONSAL_EMAIL,
+          password: process.env.TEST_CORRESPONSAL_PASSWORD,
+        },
+        // Fallback aligned with seeded portal users shown on login page.
+        {
+          email: 'corresponsal.mx@test.liquida360.com',
+          password: 'Test1234!',
+        },
+      ].filter((c): c is { email: string; password: string } => !!c.email && !!c.password)
+
+      const uniqueCandidates = candidates.filter(
+        (candidate, index) =>
+          candidates.findIndex((c) => c.email === candidate.email) === index,
+      )
+
+      let lastError = 'Unknown error'
+      for (const candidate of uniqueCandidates) {
+        const maxRetries = 3
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          if (attempt > 0) {
+            await page.waitForTimeout(2000 + 2000 * attempt)
           }
-          throw new Error(`Corresponsal login failed after ${attempt + 1} attempts`)
+
+          await page.goto('/login')
+          await page.locator('#email').waitFor({ state: 'visible', timeout: 10_000 })
+          await page.getByRole('tab', { name: 'Corresponsal' }).click()
+          await page.locator('#email').fill(candidate.email)
+          await page.locator('#password').fill(candidate.password)
+          await page.getByRole('button', { name: /Acceder al portal/i }).click()
+
+          try {
+            await page.waitForURL(/\/portal/, { timeout: 15_000 })
+            return
+          } catch {
+            const rateLimited = await page.getByText(/rate limit/i).isVisible().catch(() => false)
+            if (rateLimited && attempt < maxRetries - 1) {
+              continue
+            }
+
+            const authAlert =
+              (await page.getByRole('alert').textContent().catch(() => null)) ??
+              (await page.locator('[role="alert"]').first().textContent().catch(() => null))
+            lastError = authAlert || 'Portal redirect timeout'
+
+            if (attempt < maxRetries - 1) {
+              continue
+            }
+          }
         }
       }
+
+      throw new Error(`Corresponsal login failed with all credentials. Last error: ${lastError}`)
     })
   },
 

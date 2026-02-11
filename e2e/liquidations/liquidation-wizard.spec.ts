@@ -1,6 +1,25 @@
 import { test, expect } from '../fixtures/auth.fixture'
 import { LiquidationsPage } from '../pages/liquidations.page'
 
+async function selectFirstUuidCorrespondent(select: import('@playwright/test').Locator) {
+  const options = await select.locator('option').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      value: (node as HTMLOptionElement).value,
+      label: (node.textContent ?? '').trim(),
+    })),
+  )
+
+  const uuidOption = options.find((option) =>
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      option.value,
+    ),
+  )
+  if (!uuidOption) return false
+
+  await select.selectOption(uuidOption.value)
+  return true
+}
+
 test.describe('Liquidation Wizard', () => {
   test.beforeEach(async ({ loginAsAdmin }) => {
     await loginAsAdmin()
@@ -72,11 +91,8 @@ test.describe('Liquidation Wizard', () => {
     const dialog = page.locator('dialog[open]')
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     const select = dialog.locator('#correspondent_id')
-    const options = select.locator('option')
-    const count = await options.count()
-    test.skip(count <= 1, 'No correspondents available for selection')
-    // Select first real correspondent (index 1, since index 0 is placeholder)
-    await select.selectOption({ index: 1 })
+    const selected = await selectFirstUuidCorrespondent(select)
+    test.skip(!selected, 'No correspondents with UUID id available for selection')
     await dialog.getByRole('button', { name: /Siguiente/i }).click()
     // Should now be on step 2
     await expect(dialog.getByText(/Paso 2 de 3/i)).toBeVisible({ timeout: 5_000 })
@@ -94,10 +110,8 @@ test.describe('Liquidation Wizard', () => {
     const dialog = page.locator('dialog[open]')
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     const select = dialog.locator('#correspondent_id')
-    const options = select.locator('option')
-    const count = await options.count()
-    test.skip(count <= 1, 'No correspondents available for selection')
-    await select.selectOption({ index: 1 })
+    const selected = await selectFirstUuidCorrespondent(select)
+    test.skip(!selected, 'No correspondents with UUID id available for selection')
     await dialog.getByRole('button', { name: /Siguiente/i }).click()
     await expect(dialog.getByText(/Paso 2 de 3/i)).toBeVisible({ timeout: 5_000 })
     // On step 2, try to advance without filling required fields
@@ -114,10 +128,8 @@ test.describe('Liquidation Wizard', () => {
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     // Step 1: select correspondent
     const select = dialog.locator('#correspondent_id')
-    const options = select.locator('option')
-    const count = await options.count()
-    test.skip(count <= 1, 'No correspondents available for selection')
-    await select.selectOption({ index: 1 })
+    const selected = await selectFirstUuidCorrespondent(select)
+    test.skip(!selected, 'No correspondents with UUID id available for selection')
     await dialog.getByRole('button', { name: /Siguiente/i }).click()
     await expect(dialog.getByText(/Paso 2 de 3/i)).toBeVisible({ timeout: 5_000 })
     // Step 2: fill data
@@ -139,10 +151,8 @@ test.describe('Liquidation Wizard', () => {
     const dialog = page.locator('dialog[open]')
     await expect(dialog).toBeVisible({ timeout: 5_000 })
     const select = dialog.locator('#correspondent_id')
-    const options = select.locator('option')
-    const count = await options.count()
-    test.skip(count <= 1, 'No correspondents available for selection')
-    await select.selectOption({ index: 1 })
+    const selected = await selectFirstUuidCorrespondent(select)
+    test.skip(!selected, 'No correspondents with UUID id available for selection')
     await dialog.getByRole('button', { name: /Siguiente/i }).click()
     await expect(dialog.getByText(/Paso 2 de 3/i)).toBeVisible({ timeout: 5_000 })
     // Go back

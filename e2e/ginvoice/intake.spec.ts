@@ -112,20 +112,41 @@ test.describe('G-Invoice Intake', () => {
     await page.waitForLoadState('networkidle')
     await intake.createButton.click()
     await expect(intake.formDialog).toBeVisible()
-    // Wait for jobs to load asynchronously into the select (> 1 option means real jobs loaded)
-    await intake.jobSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {})
-    const jobOptionCount = await intake.jobSelect.locator('option').count()
-    test.skip(jobOptionCount <= 1, 'No jobs available - cannot create intake without a job')
-    // Select the first available job
-    const firstJobOption = await intake.jobSelect.locator('option').nth(1).getAttribute('value')
-    await intake.jobSelect.selectOption(firstJobOption!)
-    // Select vendor (required for vendor_invoice type)
-    await intake.vendorSelect.locator('option').nth(1).waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {})
-    const vendorOptionCount = await intake.vendorSelect.locator('option').count()
-    if (vendorOptionCount > 1) {
-      const firstVendorOption = await intake.vendorSelect.locator('option').nth(1).getAttribute('value')
-      await intake.vendorSelect.selectOption(firstVendorOption!)
+
+    const selectOptionByLabel = async (
+      select: import('@playwright/test').Locator,
+      preferredLabelIncludes: string,
+    ) => {
+      const optionLocator = select.locator('option')
+      await optionLocator.nth(1).waitFor({ state: 'attached', timeout: 10_000 }).catch(() => {})
+      const optionCount = await optionLocator.count()
+      if (optionCount <= 1) {
+        return false
+      }
+
+      const labels = await optionLocator.allTextContents()
+      const preferredIndex = labels.findIndex((label) => label.includes(preferredLabelIncludes))
+      const selectedIndex = preferredIndex > 0 ? preferredIndex : 1
+      const selectedValue = await optionLocator.nth(selectedIndex).getAttribute('value')
+      if (!selectedValue) {
+        return false
+      }
+
+      await select.selectOption(selectedValue)
+      return true
     }
+
+    // Wait for jobs to load asynchronously into the select (> 1 option means real jobs loaded)
+    const selectedJob = await selectOptionByLabel(intake.jobSelect, 'SEED-MAT-2025-0234')
+    test.skip(!selectedJob, 'No jobs available - cannot create intake without a job')
+
+    // Select a known compliant vendor to avoid compliance-blocked creation paths
+    const selectedVendor = await selectOptionByLabel(
+      intake.vendorSelect,
+      'SEED Registradores de Barcelona',
+    )
+    test.skip(!selectedVendor, 'No vendors available - cannot create intake without a vendor')
+
     // Fill amount
     await intake.amountInput.fill(testGInvIntake.amount)
     // Fill invoice number

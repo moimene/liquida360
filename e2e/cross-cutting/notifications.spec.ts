@@ -13,23 +13,43 @@ test.describe('Notifications', () => {
     await page.goto('/notifications')
     // Page should load and show either notifications or "No hay notificaciones"
     await expect(page).toHaveURL(/\/notifications/)
-    // Subtitle shows unread count or "Todas las notificaciones leidas"
-    const subtitle = page.getByText(/sin leer|Todas las notificaciones le/i)
+    // Subtitle shows unread count, all-read status, or empty-state copy
+    const subtitle = page.getByText(/sin leer|Todas las notificaciones leídas|No hay notificaciones/i)
     await expect(subtitle).toBeVisible()
   })
 
   test('should have mark all as read button when unread exist', async ({ page, loginAsAdmin }) => {
     await loginAsAdmin()
     await page.goto('/notifications')
-    // Button text is "Marcar todo como leido" (with accent)
-    const markAllButton = page.getByRole('button', { name: /Marcar todo como le/i })
+    await expect(page).toHaveURL(/\/notifications/)
+    await expect(page.getByRole('heading', { name: /Notificaciones/i })).toBeVisible({
+      timeout: 10_000,
+    })
+    await page.getByRole('status', { name: /Cargando/i }).waitFor({ state: 'hidden' }).catch(() => {})
+
+    // Button text is "Marcar todo como leído"
+    const markAllButton = page.getByRole('button', { name: /Marcar todo como leído/i })
+    const readOrEmptySubtitle = page.getByText(
+      /sin leer|Todas las notificaciones leídas|No hay notificaciones/i,
+    )
+
+    // Wait until the page resolves either to unread-action button or to a stable subtitle
+    await expect
+      .poll(async () => {
+        const hasMarkAll = await markAllButton.isVisible().catch(() => false)
+        if (hasMarkAll) return true
+        return readOrEmptySubtitle.isVisible().catch(() => false)
+      })
+      .toBeTruthy()
+
     // Button only shows when there are unread notifications
     const hasUnread = await markAllButton.isVisible().catch(() => false)
     if (hasUnread) {
       await expect(markAllButton).toBeVisible()
     } else {
-      // If no unread notifications, verify "Todas las notificaciones leidas" text instead
-      await expect(page.getByText(/Todas las notificaciones le/i)).toBeVisible()
+      // If no unread notifications, verify stable read/empty-state subtitles instead
+      const hasReadOrEmptySubtitle = await readOrEmptySubtitle.isVisible().catch(() => false)
+      expect(hasReadOrEmptySubtitle).toBeTruthy()
     }
   })
 

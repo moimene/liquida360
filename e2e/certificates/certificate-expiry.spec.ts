@@ -39,7 +39,7 @@ test.describe('Certificate Status Filtering', () => {
     await page.waitForTimeout(500)
     const hasData = await hasTableData(page)
     if (hasData) {
-      const badges = page.locator('tbody').getByText('Por vencer')
+      const badges = page.locator('tbody').getByText(/Vence en/i)
       await expect(badges.first()).toBeVisible()
     } else {
       await expect(page.getByText(/No se encontraron/i)).toBeVisible()

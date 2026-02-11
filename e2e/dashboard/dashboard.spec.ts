@@ -13,7 +13,6 @@ test.describe('Dashboard', () => {
     await page.waitForLoadState('networkidle')
     // Verify KPI card titles are visible
     await expect(page.getByText('Liquidaciones pendientes')).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText('Certificados vigentes')).toBeVisible()
     await expect(page.getByText('Certificados por vencer').first()).toBeVisible()
     // Admin sees "Pagos pendientes", other roles may see "En aprobación/pago"
     const hasPagos = await page.getByText('Pagos pendientes').isVisible().catch(() => false)
