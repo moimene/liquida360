@@ -44,6 +44,50 @@ export const useGInvIntake = create<GInvIntakeState>((set, get) => ({
   },
 
   createItem: async (formData, userId, file) => {
+    // 0. Validation & snapshots
+    // UTTAI block check
+    let uttaiSnapshot: GInvIntakeItem['uttai_status_snapshot'] = null
+    if (formData.job_id) {
+      const { data: job } = await supabase
+        .from('ginv_jobs')
+        .select('uttai_status')
+        .eq('id', formData.job_id)
+        .single()
+      if (job?.uttai_status === 'blocked') {
+        return { error: 'Job bloqueado por UTTAI. Solicita desbloqueo antes de continuar.' }
+      }
+      uttaiSnapshot = job?.uttai_status as GInvIntakeItem['uttai_status_snapshot']
+    }
+
+    // Vendor compliance + duplicate check for vendor invoices
+    let vendorCompliance: GInvIntakeItem['vendor_compliance_snapshot'] = null
+    if (formData.type === 'vendor_invoice' && formData.vendor_id) {
+      const { data: vendor } = await supabase
+        .from('ginv_vendors')
+        .select('compliance_status')
+        .eq('id', formData.vendor_id)
+        .single()
+      if (vendor) {
+        vendorCompliance = vendor.compliance_status as GInvIntakeItem['vendor_compliance_snapshot']
+        if (vendor.compliance_status === 'non_compliant') {
+          return { error: 'Proveedor no cumple (certificados). Sube documentos o solicita revisión.' }
+        }
+      }
+
+      if (formData.invoice_number) {
+        const { data: dup } = await supabase
+          .from('ginv_intake_items')
+          .select('id')
+          .eq('vendor_id', formData.vendor_id)
+          .eq('invoice_number', formData.invoice_number)
+          .eq('amount', formData.amount)
+          .limit(1)
+        if (dup && dup.length > 0) {
+          return { error: 'Posible duplicado: misma factura, proveedor e importe ya registrados.' }
+        }
+      }
+    }
+
     let filePath: string | null = null
 
     // Upload file to private bucket if provided
@@ -68,6 +112,8 @@ export const useGInvIntake = create<GInvIntakeState>((set, get) => ({
       invoice_date: formData.invoice_date || null,
       concept_text: formData.concept_text || null,
       approver_user_id: formData.approver_user_id || null,
+      uttai_status_snapshot: uttaiSnapshot,
+      vendor_compliance_snapshot: vendorCompliance,
       file_path: filePath,
       created_by: userId,
       status: 'draft' as const,

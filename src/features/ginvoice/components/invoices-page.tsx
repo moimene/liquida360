@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
-import { Loader2, Search, FileOutput, Check, ThumbsUp } from 'lucide-react'
+import { Loader2, Search, FileOutput, Check, ThumbsUp, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useSignedUrl } from '../hooks/use-signed-url'
 
 export function InvoicesPage() {
   const {
@@ -40,6 +41,11 @@ export function InvoicesPage() {
   const [sapDate, setSapDate] = useState('')
   const [sapPdf, setSapPdf] = useState<File | undefined>()
   const [sapSubmitting, setSapSubmitting] = useState(false)
+
+  // PDF viewer state
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false)
+  const { getUrl: getSignedUrl, loading: loadingPdf } = useSignedUrl()
 
   useEffect(() => {
     fetchInvoices()
@@ -213,6 +219,7 @@ export function InvoicesPage() {
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>ID</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº SAP</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Fecha SAP</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>PDF</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
               </tr>
@@ -237,6 +244,32 @@ export function InvoicesPage() {
                       </td>
                       <td className="px-4 py-3" style={{ color: 'var(--g-text-secondary)' }}>
                         {inv.sap_invoice_date ? format(new Date(inv.sap_invoice_date), 'dd MMM yyyy', { locale: es }) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {inv.pdf_file_path ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={async () => {
+                              const { url, error } = await getSignedUrl({
+                                bucketId: 'ginv-documents',
+                                path: inv.pdf_file_path!,
+                                expiresIn: 300,
+                              })
+                              if (error || !url) {
+                                toast.error(error ?? 'No se pudo abrir el PDF')
+                                return
+                              }
+                              setPdfUrl(url)
+                              setPdfViewerOpen(true)
+                            }}
+                          >
+                            <FileText className="h-3.5 w-3.5 mr-1" />
+                            Ver
+                          </Button>
+                        ) : (
+                          <span className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>Sin PDF</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -335,6 +368,28 @@ export function InvoicesPage() {
             Emitir
           </Button>
         </DialogFooter>
+      </Dialog>
+
+      {/* PDF Viewer */}
+      <Dialog
+        open={pdfViewerOpen}
+        onClose={() => {
+          setPdfViewerOpen(false)
+          setPdfUrl(null)
+        }}
+        title="Factura PDF"
+        description="Vista previa del documento"
+      >
+        {loadingPdf && (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-6 w-6 animate-spin" style={{ color: 'var(--g-brand-3308)' }} />
+          </div>
+        )}
+        {!loadingPdf && pdfUrl && (
+          <div className="border" style={{ height: '70vh' }}>
+            <iframe title="Factura PDF" src={pdfUrl} className="w-full h-full" />
+          </div>
+        )}
       </Dialog>
     </div>
   )

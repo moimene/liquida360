@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/features/auth'
 import { CreditCard, FileText, ChevronDown } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { isGInvoiceEnabled } from '@/lib/feature-flags'
 
 type Workspace = 'liquida360' | 'ginvoice'
 
@@ -36,7 +37,7 @@ function getCurrentWorkspace(pathname: string): Workspace {
 }
 
 export function WorkspaceSwitcher() {
-  const { role, ginvRole } = useAuth()
+  const { role, ginvRole, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [open, setOpen] = useState(false)
@@ -46,7 +47,7 @@ export function WorkspaceSwitcher() {
 
   // Only show switcher if user has access to both workspaces
   const hasLiquida360 = !!role && role !== 'corresponsal'
-  const hasGInvoice = !!ginvRole
+  const hasGInvoice = !!ginvRole && isGInvoiceEnabled(user)
   const hasMultipleWorkspaces = hasLiquida360 && hasGInvoice
 
   // Close dropdown on outside click

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
 import { Loader2, Search, Package, FileStack } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSignedUrl } from '../hooks/use-signed-url'
 
 export function BillingPage() {
   const {
@@ -26,6 +27,7 @@ export function BillingPage() {
   } = useGInvBilling()
   const { jobs, fetchJobs } = useGInvJobs()
   const { user } = useAuth()
+  const { getUrl: getSignedUrl, loading: loadingPdf } = useSignedUrl()
   const [search, setSearch] = useState('')
   const [jobFilter, setJobFilter] = useState<string>('all')
   const [tab, setTab] = useState<'items' | 'batches'>('items')
@@ -280,14 +282,15 @@ export function BillingPage() {
                       />
                     </th>
                     <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Tipo</th>
-                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº Factura</th>
-                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe</th>
-                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
-                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.length === 0 ? (
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº Factura</th>
+                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Documento</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredItems.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
                         No hay cargos contabilizados disponibles
@@ -316,6 +319,31 @@ export function BillingPage() {
                           </td>
                           <td className="px-4 py-3 max-w-[200px] truncate" style={{ color: 'var(--g-text-secondary)' }}>
                             {item.concept_text || '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.file_path ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={loadingPdf}
+                                onClick={async () => {
+                                  const { url, error } = await getSignedUrl({
+                                    bucketId: 'ginv-documents',
+                                    path: item.file_path!,
+                                    expiresIn: 300,
+                                  })
+                                  if (error || !url) {
+                                    toast.error(error ?? 'No se pudo abrir el PDF')
+                                    return
+                                  }
+                                  window.open(url, '_blank')
+                                }}
+                              >
+                                Ver
+                              </Button>
+                            ) : (
+                              <span className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>Sin archivo</span>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <span

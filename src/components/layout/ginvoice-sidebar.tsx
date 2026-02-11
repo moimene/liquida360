@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/features/auth'
+import { isGInvoiceEnabled } from '@/lib/feature-flags'
 import {
   LayoutDashboard,
   Upload,
@@ -82,6 +83,7 @@ export function GInvoiceSidebar({ collapsed, onToggle }: GInvoiceSidebarProps) {
   const navigate = useNavigate()
 
   function canAccess(item: NavItem): boolean {
+    if (!isGInvoiceEnabled(user)) return false
     if (!item.roles) return true
     return !!ginvRole && item.roles.includes(ginvRole)
   }

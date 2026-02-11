@@ -19,6 +19,7 @@ interface GInvDeliveriesState {
     subject: string
     body: string
     sentBy: string
+    attachments?: { file_path: string; name: string }[]
   }) => Promise<{ data?: GInvDelivery; error?: string }>
   markDelivered: (invoiceId: string) => Promise<{ error?: string }>
 }
@@ -42,7 +43,7 @@ export const useGInvDeliveries = create<GInvDeliveriesState>((set, get) => ({
     set({ deliveries: data ?? [], loading: false })
   },
 
-  createDelivery: async ({ clientInvoiceId, deliveryType, recipients, subject, body, sentBy }) => {
+  createDelivery: async ({ clientInvoiceId, deliveryType, recipients, subject, body, sentBy, attachments }) => {
     const { data, error } = await supabase
       .from('ginv_deliveries')
       .insert({
@@ -54,6 +55,7 @@ export const useGInvDeliveries = create<GInvDeliveriesState>((set, get) => ({
         sent_by: sentBy,
         sent_at: new Date().toISOString(),
         status: 'sent',
+        attachments: attachments ?? [],
       })
       .select()
       .single()

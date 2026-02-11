@@ -70,7 +70,13 @@ export const useGInvInvoices = create<GInvInvoicesState>((set, get) => ({
   },
 
   registerSapInvoice: async (id, sapNumber, sapDate, pdfFile) => {
-    let pdfPath: string | null = null
+    // Ensure we keep or create a PDF for the invoice
+    const existing = get().invoices.find((inv) => inv.id === id)?.pdf_file_path
+    let pdfPath: string | null = existing ?? null
+
+    if (!pdfFile && !pdfPath) {
+      return { error: 'Debes adjuntar el PDF de la factura para emitir en SAP.' }
+    }
 
     if (pdfFile) {
       const ext = pdfFile.name.split('.').pop()

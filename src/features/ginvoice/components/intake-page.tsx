@@ -13,8 +13,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export function IntakePage() {
-  const { items, loading, fetchItems, createItem } = useGInvIntake()
-  const { user } = useAuth()
+  const { items, loading, fetchItems, createItem, submitItem, approveItem, rejectItem } = useGInvIntake()
+  const { user, ginvRole } = useAuth()
   const [formOpen, setFormOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
@@ -167,6 +167,7 @@ export function IntakePage() {
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Creado</th>
+                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -211,6 +212,48 @@ export function IntakePage() {
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-tertiary)' }}>
                         {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: es })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          {ginvRole === 'ginv_operador' && item.status === 'draft' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                const { error } = await submitItem(item.id)
+                                if (error) toast.error(error)
+                                else toast.success('Enviado a revisión')
+                              }}
+                            >
+                              Enviar
+                            </Button>
+                          )}
+                          {ginvRole === 'ginv_socio_aprobador' && item.status === 'submitted' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  const { error } = await rejectItem(item.id)
+                                  if (error) toast.error(error)
+                                  else toast.success('Rechazado')
+                                }}
+                              >
+                                Rechazar
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  const { error } = await approveItem(item.id)
+                                  if (error) toast.error(error)
+                                  else toast.success('Aprobado')
+                                }}
+                              >
+                                Aprobar
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )

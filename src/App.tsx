@@ -176,6 +176,11 @@ const GInvPlatformsPage = lazy(() =>
     default: m.PlatformsPage,
   })),
 )
+const GInvSettingsPage = lazy(() =>
+  import('@/features/ginvoice/components/settings-page').then((m) => ({
+    default: m.GInvoiceSettingsPage,
+  })),
+)
 
 function App() {
   const initialize = useAuth((s) => s.initialize)
@@ -234,6 +239,7 @@ function App() {
               <Route path="invoices" element={<GInvInvoicesPage />} />
               <Route path="delivery" element={<GInvDeliveryPage />} />
               <Route path="platforms" element={<GInvPlatformsPage />} />
+              <Route path="settings" element={<GInvSettingsPage />} />
             </Route>
 
             {/* Internal routes (pagador, supervisor, financiero, admin) */}

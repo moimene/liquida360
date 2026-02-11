@@ -88,6 +88,16 @@ export const useGInvBilling = create<GInvBillingState>((set, get) => ({
   },
 
   createBatch: async (jobId, intakeItemIds, createdBy, uttaiSubjectObliged) => {
+    // Guard: UTTAI bloqueado no permite avanzar
+    const { data: job } = await supabase
+      .from('ginv_jobs')
+      .select('uttai_status')
+      .eq('id', jobId)
+      .single()
+    if (job?.uttai_status === 'blocked') {
+      return { error: 'El Job está bloqueado por UTTAI. Debe desbloquearse antes de facturar.' }
+    }
+
     // 1. Create batch
     const { data: batch, error: batchError } = await supabase
       .from('ginv_billing_batches')

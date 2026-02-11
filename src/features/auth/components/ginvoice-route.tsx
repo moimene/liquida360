@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/use-auth'
 import type { GInvoiceRole } from '@/types'
 import { Loader2 } from 'lucide-react'
+import { isGInvoiceEnabled } from '@/lib/feature-flags'
 
 interface GInvoiceRouteProps {
   children: React.ReactNode
@@ -36,7 +37,11 @@ export function GInvoiceRoute({ children, allowedRoles }: GInvoiceRouteProps) {
     return <Navigate to="/portal" replace />
   }
 
-  // Must have a G-Invoice role to access these routes
+  // Must have G-Invoice enabled + role to access these routes
+  if (!isGInvoiceEnabled(user)) {
+    return <Navigate to="/" replace />
+  }
+
   if (!ginvRole) {
     return <Navigate to="/" replace />
   }

@@ -11,6 +11,8 @@ import { Loader2, Send, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { supabase } from '@/lib/supabase'
+import { useSignedUrl } from '../hooks/use-signed-url'
 
 interface RecipientInput {
   name: string
@@ -28,6 +30,8 @@ export function DeliveryPage() {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [recipients, setRecipients] = useState<RecipientInput[]>([{ name: '', email: '' }])
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null)
+  const { getUrl: getSignedUrl } = useSignedUrl()
 
   const loading = loadingDeliveries || loadingInvoices
 
@@ -62,6 +66,26 @@ export function DeliveryPage() {
       return
     }
 
+    const invoice = invoices.find((i) => i.id === selectedInvoiceId)
+    if (!invoice?.pdf_file_path && !attachmentFile) {
+      toast.error('No hay PDF de factura. Adjunta el PDF o registra la factura emitida.')
+      return
+    }
+
+    let attachments: { file_path: string; name: string }[] | undefined
+    if (attachmentFile) {
+      const ext = attachmentFile.name.split('.').pop()
+      const path = `deliveries/${selectedInvoiceId}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('ginv-documents')
+        .upload(path, attachmentFile)
+      if (uploadError) {
+        toast.error(`Error subiendo adjunto: ${uploadError.message}`)
+        return
+      }
+      attachments = [{ file_path: path, name: attachmentFile.name }]
+    }
+
     setSubmitting(true)
     const { error } = await createDelivery({
       clientInvoiceId: selectedInvoiceId,
@@ -70,6 +94,7 @@ export function DeliveryPage() {
       subject: subject || 'Factura adjunta',
       body: body || '',
       sentBy: user.id,
+      attachments,
     })
     setSubmitting(false)
 
@@ -88,6 +113,7 @@ export function DeliveryPage() {
     setSubject('')
     setBody('')
     setRecipients([{ name: '', email: '' }])
+    setAttachmentFile(null)
   }
 
   return (
@@ -171,6 +197,7 @@ export function DeliveryPage() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Factura</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>PDF</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Tipo</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Destinatarios</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Asunto</th>
@@ -190,6 +217,31 @@ export function DeliveryPage() {
                   <tr key={del.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                     <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--g-text-primary)' }}>
                       {del.client_invoice_id.slice(0, 8)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={async () => {
+                          const invoice = invoices.find((i) => i.id === del.client_invoice_id)
+                          if (!invoice?.pdf_file_path) {
+                            toast.error('La factura no tiene PDF registrado')
+                            return
+                          }
+                          const { url, error } = await getSignedUrl({
+                            bucketId: 'ginv-documents',
+                            path: invoice.pdf_file_path,
+                            expiresIn: 300,
+                          })
+                          if (error || !url) {
+                            toast.error(error ?? 'No se pudo abrir el PDF')
+                            return
+                          }
+                          window.open(url, '_blank')
+                        }}
+                      >
+                        PDF
+                      </Button>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--g-text-secondary)' }}>
                       {del.delivery_type}
@@ -293,7 +345,19 @@ export function DeliveryPage() {
                   </Button>
                 )}
               </div>
-            ))}
+              ))}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label>Adjunto (PDF o ZIP)</Label>
+            <Input
+              type="file"
+              accept=".pdf,.zip"
+              onChange={(e) => setAttachmentFile(e.target.files?.[0] ?? null)}
+            />
+            <p className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>
+              Se guarda en bucket privado y se enlaza en la entrega.
+            </p>
           </div>
         </div>
         <DialogFooter>

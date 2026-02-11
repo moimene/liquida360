@@ -11,6 +11,7 @@ import { Loader2, Search, Plus, MonitorSmartphone, CheckCircle2 } from 'lucide-r
 import { toast } from 'sonner'
 import { format, isPast } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useSignedUrl } from '../hooks/use-signed-url'
 
 export function PlatformsPage() {
   const { tasks, loading, fetchTasks, createTask, updateTaskStatus, completeTask } = useGInvPlatforms()
@@ -34,6 +35,7 @@ export function PlatformsPage() {
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null)
   const [evidenceFile, setEvidenceFile] = useState<File | undefined>()
   const [completing, setCompleting] = useState(false)
+  const { getUrl: getSignedUrl } = useSignedUrl()
 
   useEffect(() => {
     fetchTasks()
@@ -238,6 +240,7 @@ export function PlatformsPage() {
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Código</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº Factura</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>SLA</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>PDF</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
               </tr>
@@ -270,6 +273,31 @@ export function PlatformsPage() {
                       <td className="px-4 py-3 text-xs" style={{ color: overdue ? 'var(--status-error)' : 'var(--g-text-secondary)' }}>
                         {task.sla_due_at ? format(new Date(task.sla_due_at), 'dd MMM yyyy', { locale: es }) : '—'}
                         {overdue && <span className="ml-1 font-medium">(vencida)</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            const invoice = invoices.find((i) => i.id === task.client_invoice_id)
+                            if (!invoice?.pdf_file_path) {
+                              toast.error('Factura sin PDF registrado')
+                              return
+                            }
+                            const { url, error } = await getSignedUrl({
+                              bucketId: 'ginv-documents',
+                              path: invoice.pdf_file_path,
+                              expiresIn: 300,
+                            })
+                            if (error || !url) {
+                              toast.error(error ?? 'No se pudo abrir el PDF')
+                              return
+                            }
+                            window.open(url, '_blank')
+                          }}
+                        >
+                          PDF
+                        </Button>
                       </td>
                       <td className="px-4 py-3">
                         <span
