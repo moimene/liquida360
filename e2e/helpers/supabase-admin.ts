@@ -1,4 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
+import fs from 'fs'
+import path from 'path'
+
+// Load local test env if CI secrets are missing
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const envPath = path.resolve(__dirname, '..', '.env.test')
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf-8')
+    content
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'))
+      .forEach((line) => {
+        const idx = line.indexOf('=')
+        if (idx === -1) return
+        const k = line.slice(0, idx).trim()
+        const v = line.slice(idx + 1).trim()
+        if (!process.env[k]) process.env[k] = v
+      })
+  }
+}
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
