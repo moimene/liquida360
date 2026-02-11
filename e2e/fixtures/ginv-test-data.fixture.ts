@@ -25,27 +25,27 @@ export const test = authTest.extend<{
   testGInvVendor: TestGInvVendor
   testGInvIntake: TestGInvIntake
 }>({
-  testGInvJob: async ({}, use) => {
+  testGInvJob: async ({ page: _page }, fixtureApply) => {
     const ts = Date.now()
-    await use({
+    await fixtureApply({
       job_code: `J-E2E-${ts}`,
       client_code: `CLI-E2E-${ts}`,
       client_name: `E2E Test Client ${ts}`,
     })
   },
 
-  testGInvVendor: async ({}, use) => {
+  testGInvVendor: async ({ page: _page }, fixtureApply) => {
     const ts = Date.now()
-    await use({
+    await fixtureApply({
       name: `E2E Test Vendor ${ts}`,
       tax_id: `B${ts.toString().slice(-8)}`,
       country: 'ES',
     })
   },
 
-  testGInvIntake: async ({}, use) => {
+  testGInvIntake: async ({ page: _page }, fixtureApply) => {
     const ts = Date.now()
-    await use({
+    await fixtureApply({
       type: 'vendor_invoice',
       amount: '1500.00',
       currency: 'EUR',

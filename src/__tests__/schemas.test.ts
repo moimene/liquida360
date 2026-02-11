@@ -105,6 +105,7 @@ describe('Zod Schemas', () => {
         issuing_country: 'ES',
         issue_date: '2026-01-01',
         expiry_date: '2027-01-01',
+        apostilled: false,
       })
       expect(result.success).toBe(true)
     })
@@ -115,6 +116,7 @@ describe('Zod Schemas', () => {
         issuing_country: 'ES',
         issue_date: '2027-01-01',
         expiry_date: '2026-01-01',
+        apostilled: false,
       })
       expect(result.success).toBe(false)
     })
@@ -125,6 +127,7 @@ describe('Zod Schemas', () => {
         issuing_country: 'ES',
         issue_date: '2026-01-01',
         expiry_date: '2027-01-01',
+        apostilled: false,
       })
       expect(result.success).toBe(false)
     })
@@ -135,6 +138,7 @@ describe('Zod Schemas', () => {
         issuing_country: '',
         issue_date: '2026-01-01',
         expiry_date: '2027-01-01',
+        apostilled: false,
       })
       expect(result.success).toBe(false)
     })

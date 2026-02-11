@@ -1,4 +1,4 @@
-import { test as base, expect } from '@playwright/test'
+import { test as base } from '@playwright/test'
 
 type AuthFixtures = {
   loginAsAdmin: () => Promise<void>
@@ -88,32 +88,32 @@ async function loginGInvoice(page: import('@playwright/test').Page, email: strin
 }
 
 export const test = base.extend<AuthFixtures>({
-  loginAsAdmin: async ({ page }, use) => {
-    await use(async () => {
+  loginAsAdmin: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginInternal(page, process.env.TEST_ADMIN_EMAIL!, process.env.TEST_ADMIN_PASSWORD!)
     })
   },
 
-  loginAsPagador: async ({ page }, use) => {
-    await use(async () => {
+  loginAsPagador: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginInternal(page, process.env.TEST_PAGADOR_EMAIL!, process.env.TEST_PAGADOR_PASSWORD!)
     })
   },
 
-  loginAsSupervisor: async ({ page }, use) => {
-    await use(async () => {
+  loginAsSupervisor: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginInternal(page, process.env.TEST_SUPERVISOR_EMAIL!, process.env.TEST_SUPERVISOR_PASSWORD!)
     })
   },
 
-  loginAsFinanciero: async ({ page }, use) => {
-    await use(async () => {
+  loginAsFinanciero: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginInternal(page, process.env.TEST_FINANCIERO_EMAIL!, process.env.TEST_FINANCIERO_PASSWORD!)
     })
   },
 
-  loginAsCorresponsal: async ({ page }, use) => {
-    await use(async () => {
+  loginAsCorresponsal: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       const candidates = [
         {
           email: process.env.TEST_CORRESPONSAL_EMAIL,
@@ -171,32 +171,32 @@ export const test = base.extend<AuthFixtures>({
     })
   },
 
-  loginAsGInvAdmin: async ({ page }, use) => {
-    await use(async () => {
+  loginAsGInvAdmin: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginGInvoice(page, process.env.TEST_GINV_ADMIN_EMAIL!, process.env.TEST_GINV_ADMIN_PASSWORD!)
     })
   },
 
-  loginAsGInvOperador: async ({ page }, use) => {
-    await use(async () => {
+  loginAsGInvOperador: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginGInvoice(page, process.env.TEST_GINV_OPERADOR_EMAIL!, process.env.TEST_GINV_OPERADOR_PASSWORD!)
     })
   },
 
-  loginAsGInvSocio: async ({ page }, use) => {
-    await use(async () => {
+  loginAsGInvSocio: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginGInvoice(page, process.env.TEST_GINV_SOCIO_EMAIL!, process.env.TEST_GINV_SOCIO_PASSWORD!)
     })
   },
 
-  loginAsGInvBpo: async ({ page }, use) => {
-    await use(async () => {
+  loginAsGInvBpo: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginGInvoice(page, process.env.TEST_GINV_BPO_EMAIL!, process.env.TEST_GINV_BPO_PASSWORD!)
     })
   },
 
-  loginAsGInvCompliance: async ({ page }, use) => {
-    await use(async () => {
+  loginAsGInvCompliance: async ({ page }, fixtureApply) => {
+    await fixtureApply(async () => {
       await loginGInvoice(page, process.env.TEST_GINV_COMPLIANCE_EMAIL!, process.env.TEST_GINV_COMPLIANCE_PASSWORD!)
     })
   },

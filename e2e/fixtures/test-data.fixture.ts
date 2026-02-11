@@ -20,9 +20,9 @@ export const test = authTest.extend<{
   testCorrespondent: TestCorrespondent
   testLiquidation: TestLiquidation
 }>({
-  testCorrespondent: async ({}, use) => {
+  testCorrespondent: async ({ page: _page }, fixtureApply) => {
     const ts = Date.now()
-    await use({
+    await fixtureApply({
       name: `E2E Test Firm ${ts}`,
       country: 'ES',
       tax_id: `B${ts.toString().slice(-8)}`,
@@ -32,9 +32,9 @@ export const test = authTest.extend<{
     })
   },
 
-  testLiquidation: async ({}, use) => {
+  testLiquidation: async ({ page: _page }, fixtureApply) => {
     const ts = Date.now()
-    await use({
+    await fixtureApply({
       amount: '15000.50',
       currency: 'EUR',
       concept: `E2E Test Liquidation ${ts}`,

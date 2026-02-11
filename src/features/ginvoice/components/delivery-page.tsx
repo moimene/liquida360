@@ -19,6 +19,12 @@ interface RecipientInput {
   email: string
 }
 
+function buildDeliveryAttachmentPath(invoiceId: string, file: File) {
+  const ext = file.name.split('.').pop() ?? 'pdf'
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  return `deliveries/${invoiceId}/${file.lastModified}-${file.size}-${sanitizedName}.${ext}`
+}
+
 export function DeliveryPage() {
   const { deliveries, loading: loadingDeliveries, fetchDeliveries, createDelivery } = useGInvDeliveries()
   const { invoices, loading: loadingInvoices, fetchInvoices } = useGInvInvoices()
@@ -74,11 +80,10 @@ export function DeliveryPage() {
 
     let attachments: { file_path: string; name: string }[] | undefined
     if (attachmentFile) {
-      const ext = attachmentFile.name.split('.').pop()
-      const path = `deliveries/${selectedInvoiceId}/${Date.now()}.${ext}`
+      const path = buildDeliveryAttachmentPath(selectedInvoiceId, attachmentFile)
       const { error: uploadError } = await supabase.storage
         .from('ginv-documents')
-        .upload(path, attachmentFile)
+        .upload(path, attachmentFile, { upsert: true })
       if (uploadError) {
         toast.error(`Error subiendo adjunto: ${uploadError.message}`)
         return

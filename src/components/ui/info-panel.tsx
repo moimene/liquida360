@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Info, Lightbulb, AlertTriangle, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -48,14 +48,10 @@ export function InfoPanel({
   dismissKey,
   className = '',
 }: InfoPanelProps) {
-  const [dismissed, setDismissed] = useState(false)
-
-  useEffect(() => {
-    if (dismissKey) {
-      const stored = localStorage.getItem(`${DISMISS_PREFIX}${dismissKey}`)
-      if (stored === 'true') queueMicrotask(() => setDismissed(true))
-    }
-  }, [dismissKey])
+  const [dismissed, setDismissed] = useState(() => {
+    if (!dismissKey || typeof window === 'undefined') return false
+    return localStorage.getItem(`${DISMISS_PREFIX}${dismissKey}`) === 'true'
+  })
 
   if (dismissed) return null
 
