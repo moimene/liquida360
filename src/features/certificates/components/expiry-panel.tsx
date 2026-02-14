@@ -8,6 +8,7 @@ import { getCertificateStatus, formatDate } from '@/lib/certificate-utils'
 import { COUNTRIES } from '@/lib/countries'
 import { COUNTRY_VERIFICATIONS, APOSTILLE_INFO } from '../constants/verification-guide-data'
 import { CERTIFICATES_HELP } from '../constants/help-texts'
+import { CERTIFICATE_ALERT_DEFAULTS } from '@/lib/constants'
 
 interface ExpiryPanelProps {
   certificates: Certificate[]
@@ -20,7 +21,7 @@ export function ExpiryPanel({ certificates }: ExpiryPanelProps) {
         cert,
         info: getCertificateStatus(cert.expiry_date),
       }))
-      .filter(({ info }) => info.status !== 'valid' || info.daysRemaining <= 90)
+      .filter(({ info }) => info.status !== 'valid' || info.daysRemaining <= CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS)
       .sort((a, b) => a.info.daysRemaining - b.info.daysRemaining)
   }, [certificates])
 
@@ -86,14 +87,14 @@ export function ExpiryPanel({ certificates }: ExpiryPanelProps) {
       {expiringSoon.length > 0 && (
         <Card
           style={{
-            borderLeft: '4px solid var(--status-warning)',
+            borderLeft: '4px solid var(--status-error)',
           }}
         >
           <CardContent className="py-4">
             <div className="flex items-start gap-3">
               <AlertTriangle
                 className="h-5 w-5 mt-0.5 shrink-0"
-                style={{ color: 'var(--status-warning)' }}
+                style={{ color: 'var(--status-error)' }}
               />
               <div className="flex-1">
                 <p className="font-bold text-sm" style={{ color: 'var(--g-text-primary)' }}>
@@ -104,7 +105,7 @@ export function ExpiryPanel({ certificates }: ExpiryPanelProps) {
                   {expiringSoon.map(({ cert, info }) => {
                     const corr = cert as Certificate & { correspondents?: { name: string } }
                     return (
-                      <Badge key={cert.id} variant="warning">
+                      <Badge key={cert.id} variant="destructive">
                         <Clock className="h-3 w-3 mr-1" />
                         {corr.correspondents?.name ?? 'Sin nombre'} · {info.daysRemaining} días
                       </Badge>

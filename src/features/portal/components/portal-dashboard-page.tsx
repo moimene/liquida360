@@ -77,14 +77,14 @@ export function PortalDashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           icon={Receipt}
-          label="Borradores"
+          label="Subidas"
           value={stats.drafts}
           color="var(--g-text-secondary)"
           helpTip={PORTAL_HELP.kpiBorradores}
         />
         <KPICard
           icon={Clock}
-          label="En proceso"
+          label="Aceptadas / pendientes"
           value={stats.pending}
           color="var(--status-alert)"
           helpTip={PORTAL_HELP.kpiEnProceso}

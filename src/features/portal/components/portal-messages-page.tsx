@@ -82,7 +82,7 @@ export function PortalMessagesPage() {
           <InfoTip content={MESSAGING_HELP.portalHeaderTip} side="bottom" />
         </h1>
         <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
-          Comunícate directamente con el equipo de gestión
+          Contacto directo con BPO para seguimiento operativo
         </p>
       </div>
 

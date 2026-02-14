@@ -8,11 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
-import { Loader2, Search, FileOutput, Check, ThumbsUp, FileText } from 'lucide-react'
+import { Loader2, Search, FileOutput, Check, ThumbsUp, FileText, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useSignedUrl } from '../hooks/use-signed-url'
+import { buildSapDeepLink } from '../lib/sap-links'
+import { getSapPayloadAttachmentCount, getSapPayloadFxSummary } from '../lib/fx-audit'
 
 export function InvoicesPage() {
   const {
@@ -121,14 +123,24 @@ export function InvoicesPage() {
   async function handleRegisterSap() {
     if (!sapInvoiceId || !sapNumber.trim() || !sapDate) return
     setSapSubmitting(true)
-    const { error } = await registerSapInvoice(sapInvoiceId, sapNumber.trim(), sapDate, sapPdf)
+    const { error, warning } = await registerSapInvoice(sapInvoiceId, sapNumber.trim(), sapDate, sapPdf)
     setSapSubmitting(false)
     if (error) {
       toast.error(error)
       return
     }
+    if (warning) toast.warning(warning)
     toast.success('Factura emitida en SAP')
     setSapDialogOpen(false)
+  }
+
+  function openSapInvoice(sapInvoiceNumber: string) {
+    const sapUrl = buildSapDeepLink(sapInvoiceNumber)
+    if (!sapUrl) {
+      toast.error('Configura la URL SAP en Ajustes G-Invoice (plantilla con {ref}).')
+      return
+    }
+    window.open(sapUrl, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -219,6 +231,8 @@ export function InvoicesPage() {
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>ID</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº SAP</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Fecha SAP</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Adj. tasa</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>FX EUR</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>PDF</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
@@ -227,23 +241,45 @@ export function InvoicesPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
+                  <td colSpan={8} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
                     No hay facturas
                   </td>
                 </tr>
               ) : (
                 filtered.map((inv) => {
                   const sc = INVOICE_STATUS_CONFIG[inv.status] ?? INVOICE_STATUS_CONFIG.invoice_draft
+                  const sapInvoiceNumber = inv.sap_invoice_number ?? undefined
+                  const attachmentCount = getSapPayloadAttachmentCount(inv.sap_payload)
+                  const fxSummary = getSapPayloadFxSummary(inv.sap_payload)
                   return (
                     <tr key={inv.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                       <td className="px-4 py-3 font-mono text-xs" style={{ color: 'var(--g-text-primary)' }}>
                         {inv.id.slice(0, 8)}
                       </td>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--g-text-primary)' }}>
-                        {inv.sap_invoice_number || '—'}
+                        {sapInvoiceNumber ? (
+                          <button
+                            className="inline-flex items-center gap-1 text-sm font-medium"
+                            style={{ color: 'var(--g-brand-3308)' }}
+                            onClick={() => openSapInvoice(sapInvoiceNumber)}
+                          >
+                            {sapInvoiceNumber}
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td className="px-4 py-3" style={{ color: 'var(--g-text-secondary)' }}>
                         {inv.sap_invoice_date ? format(new Date(inv.sap_invoice_date), 'dd MMM yyyy', { locale: es }) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                        {attachmentCount > 0 ? `${attachmentCount} adj.` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                        {typeof fxSummary.totalAmountEur === 'number'
+                          ? `${new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(fxSummary.totalAmountEur)}${fxSummary.missingRatesCount > 0 ? ` (${fxSummary.missingRatesCount} sin TC)` : ''}`
+                          : '—'}
                       </td>
                       <td className="px-4 py-3">
                         {inv.pdf_file_path ? (
@@ -296,6 +332,12 @@ export function InvoicesPage() {
                             <Button size="sm" onClick={() => openSapDialog(inv.id)}>
                               <Check className="h-3.5 w-3.5 mr-1" />
                               Emitir en SAP
+                            </Button>
+                          )}
+                          {inv.status === 'issued' && sapInvoiceNumber && (
+                            <Button size="sm" variant="outline" onClick={() => openSapInvoice(sapInvoiceNumber)}>
+                              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                              Abrir SAP
                             </Button>
                           )}
                         </div>

@@ -191,10 +191,10 @@ export function PortalInvoiceDetailPage() {
                 <p>Tu factura esta pendiente de aprobacion por un supervisor.</p>
               )}
               {liquidation.status === 'approved' && (
-                <p>Tu factura ha sido aprobada. Se procedera a solicitar el pago.</p>
+                <p>Tu factura ha sido aceptada. Se procedera a preparar la fecha de pago.</p>
               )}
               {liquidation.status === 'payment_requested' && (
-                <p>Se ha solicitado el pago al departamento financiero. En breve sera procesado.</p>
+                <p>Tu factura ya tiene fecha de pago y está en gestión con el departamento financiero.</p>
               )}
               {liquidation.status === 'paid' && <p>Pago completado. Tu factura ha sido abonada.</p>}
               {liquidation.status === 'rejected' && (

@@ -13,6 +13,11 @@ export type Database = {
           address: string
           email: string | null
           phone: string | null
+          bank_account_holder: string | null
+          bank_account_iban: string | null
+          bank_swift_bic: string | null
+          bank_certificate_url: string | null
+          bank_data_updated_at: string | null
           status: 'active' | 'inactive' | 'pending_approval'
           user_id: string | null
           created_at: string
@@ -25,6 +30,11 @@ export type Database = {
           address: string
           email?: string | null
           phone?: string | null
+          bank_account_holder?: string | null
+          bank_account_iban?: string | null
+          bank_swift_bic?: string | null
+          bank_certificate_url?: string | null
+          bank_data_updated_at?: string | null
           status?: 'active' | 'inactive' | 'pending_approval'
           user_id?: string | null
         }
@@ -35,6 +45,11 @@ export type Database = {
           address?: string
           email?: string | null
           phone?: string | null
+          bank_account_holder?: string | null
+          bank_account_iban?: string | null
+          bank_swift_bic?: string | null
+          bank_certificate_url?: string | null
+          bank_data_updated_at?: string | null
           status?: 'active' | 'inactive' | 'pending_approval'
           user_id?: string | null
         }
@@ -47,6 +62,7 @@ export type Database = {
           issuing_country: string
           issue_date: string
           expiry_date: string
+          certificate_type: 'residence' | 'withholding' | 'bank_account'
           document_url: string | null
           status: 'valid' | 'expiring_soon' | 'expired'
           apostilled: boolean
@@ -59,6 +75,7 @@ export type Database = {
           issuing_country: string
           issue_date: string
           expiry_date: string
+          certificate_type?: 'residence' | 'withholding' | 'bank_account'
           document_url?: string | null
           status?: 'valid' | 'expiring_soon' | 'expired'
           apostilled?: boolean
@@ -69,6 +86,7 @@ export type Database = {
           issuing_country?: string
           issue_date?: string
           expiry_date?: string
+          certificate_type?: 'residence' | 'withholding' | 'bank_account'
           document_url?: string | null
           status?: 'valid' | 'expiring_soon' | 'expired'
           apostilled?: boolean
@@ -401,6 +419,7 @@ export type Database = {
           job_code: string
           client_code: string
           client_name: string
+          client_country: string
           uttai_status: 'clear' | 'blocked' | 'pending_review'
           uttai_subject_obliged: boolean | null
           owner_user_id: string | null
@@ -412,6 +431,7 @@ export type Database = {
           job_code: string
           client_code: string
           client_name: string
+          client_country?: string
           uttai_status?: 'clear' | 'blocked' | 'pending_review'
           uttai_subject_obliged?: boolean | null
           owner_user_id?: string | null
@@ -421,6 +441,7 @@ export type Database = {
           job_code?: string
           client_code?: string
           client_name?: string
+          client_country?: string
           uttai_status?: 'clear' | 'blocked' | 'pending_review'
           uttai_subject_obliged?: boolean | null
           owner_user_id?: string | null
@@ -498,9 +519,14 @@ export type Database = {
           job_id: string | null
           currency: string
           amount: number
+          amount_eur: number | null
+          exchange_rate_to_eur: number | null
           invoice_number: string | null
+          nrc_number: string | null
           invoice_date: string | null
           concept_text: string | null
+          official_organism: string | null
+          tariff_type: string | null
           approver_user_id: string | null
           uttai_status_snapshot: 'clear' | 'blocked' | 'pending_review' | null
           vendor_compliance_snapshot: 'compliant' | 'expiring_soon' | 'non_compliant' | null
@@ -527,9 +553,14 @@ export type Database = {
           job_id?: string | null
           currency?: string
           amount: number
+          amount_eur?: number | null
+          exchange_rate_to_eur?: number | null
           invoice_number?: string | null
+          nrc_number?: string | null
           invoice_date?: string | null
           concept_text?: string | null
+          official_organism?: string | null
+          tariff_type?: string | null
           approver_user_id?: string | null
           uttai_status_snapshot?: 'clear' | 'blocked' | 'pending_review' | null
           vendor_compliance_snapshot?: 'compliant' | 'expiring_soon' | 'non_compliant' | null
@@ -554,9 +585,14 @@ export type Database = {
           job_id?: string | null
           currency?: string
           amount?: number
+          amount_eur?: number | null
+          exchange_rate_to_eur?: number | null
           invoice_number?: string | null
+          nrc_number?: string | null
           invoice_date?: string | null
           concept_text?: string | null
+          official_organism?: string | null
+          tariff_type?: string | null
           approver_user_id?: string | null
           uttai_status_snapshot?: 'clear' | 'blocked' | 'pending_review' | null
           vendor_compliance_snapshot?: 'compliant' | 'expiring_soon' | 'non_compliant' | null
@@ -708,6 +744,12 @@ export type Database = {
           sap_invoice_number: string | null
           sap_invoice_date: string | null
           pdf_file_path: string | null
+          sap_payload: Record<string, unknown>
+          collection_status: 'pending' | 'partially_paid' | 'paid'
+          due_date: string | null
+          amount_due_eur: number | null
+          amount_paid_eur: number
+          paid_at: string | null
           status:
             | 'invoice_draft'
             | 'pending_partner_approval'
@@ -725,6 +767,12 @@ export type Database = {
           sap_invoice_number?: string | null
           sap_invoice_date?: string | null
           pdf_file_path?: string | null
+          sap_payload?: Record<string, unknown>
+          collection_status?: 'pending' | 'partially_paid' | 'paid'
+          due_date?: string | null
+          amount_due_eur?: number | null
+          amount_paid_eur?: number
+          paid_at?: string | null
           status?:
             | 'invoice_draft'
             | 'pending_partner_approval'
@@ -740,6 +788,12 @@ export type Database = {
           sap_invoice_number?: string | null
           sap_invoice_date?: string | null
           pdf_file_path?: string | null
+          sap_payload?: Record<string, unknown>
+          collection_status?: 'pending' | 'partially_paid' | 'paid'
+          due_date?: string | null
+          amount_due_eur?: number | null
+          amount_paid_eur?: number
+          paid_at?: string | null
           status?:
             | 'invoice_draft'
             | 'pending_partner_approval'
@@ -755,6 +809,91 @@ export type Database = {
             columns: ['batch_id']
             isOneToOne: false
             referencedRelation: 'ginv_billing_batches'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ginv_collection_claims: {
+        Row: {
+          id: string
+          client_invoice_id: string
+          job_id: string | null
+          status: 'pending_approval' | 'approved' | 'rejected' | 'sent'
+          subject: string
+          body: string
+          recipients: Record<string, unknown>[]
+          cc_recipients: Record<string, unknown>[]
+          responsible_recipients: Record<string, unknown>[]
+          approval_notes: string | null
+          created_by: string
+          approved_by: string | null
+          approved_at: string | null
+          rejected_by: string | null
+          rejected_at: string | null
+          sent_by: string | null
+          sent_at: string | null
+          delivery_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          client_invoice_id: string
+          job_id?: string | null
+          status?: 'pending_approval' | 'approved' | 'rejected' | 'sent'
+          subject: string
+          body: string
+          recipients?: Record<string, unknown>[]
+          cc_recipients?: Record<string, unknown>[]
+          responsible_recipients?: Record<string, unknown>[]
+          approval_notes?: string | null
+          created_by: string
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
+          sent_by?: string | null
+          sent_at?: string | null
+          delivery_id?: string | null
+        }
+        Update: {
+          client_invoice_id?: string
+          job_id?: string | null
+          status?: 'pending_approval' | 'approved' | 'rejected' | 'sent'
+          subject?: string
+          body?: string
+          recipients?: Record<string, unknown>[]
+          cc_recipients?: Record<string, unknown>[]
+          responsible_recipients?: Record<string, unknown>[]
+          approval_notes?: string | null
+          created_by?: string
+          approved_by?: string | null
+          approved_at?: string | null
+          rejected_by?: string | null
+          rejected_at?: string | null
+          sent_by?: string | null
+          sent_at?: string | null
+          delivery_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ginv_collection_claims_client_invoice_id_fkey'
+            columns: ['client_invoice_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_client_invoices'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ginv_collection_claims_delivery_id_fkey'
+            columns: ['delivery_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_deliveries'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ginv_collection_claims_job_id_fkey'
+            columns: ['job_id']
+            isOneToOne: false
+            referencedRelation: 'ginv_jobs'
             referencedColumns: ['id']
           },
         ]

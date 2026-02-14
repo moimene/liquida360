@@ -6,6 +6,7 @@ import type { Certificate } from '@/types'
 import { getCertificateStatus } from '@/lib/certificate-utils'
 import { differenceInDays, parseISO } from 'date-fns'
 import { FileCheck } from 'lucide-react'
+import { CERTIFICATE_ALERT_DEFAULTS } from '@/lib/constants'
 
 interface CertificateExpiryChartProps {
   certificates: Certificate[]
@@ -17,18 +18,13 @@ export function CertificateExpiryChart({ certificates }: CertificateExpiryChartP
     return certificates
       .map((cert) => {
         const info = getCertificateStatus(cert.expiry_date)
-        if (info.status === 'valid' && info.daysRemaining > 90) return null
+        if (info.status === 'valid' && info.daysRemaining > CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS) return null
         const corr = (cert as Certificate & { correspondents?: { name: string } }).correspondents
         const days = differenceInDays(parseISO(cert.expiry_date), today)
         return {
           name: corr?.name ?? 'Sin corresponsal',
           days: Math.max(days, 0),
-          color:
-            days > 60
-              ? 'var(--status-success)'
-              : days > 30
-                ? 'var(--status-warning)'
-                : 'var(--status-error)',
+          color: 'var(--status-error)',
         }
       })
       .filter(Boolean)
@@ -46,7 +42,7 @@ export function CertificateExpiryChart({ certificates }: CertificateExpiryChartP
           <EmptyState
             icon={FileCheck}
             title="Sin vencimientos próximos"
-            description="Todos los certificados están vigentes por más de 90 días"
+            description={`Todos los certificados están vigentes por más de ${CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS} días`}
           />
         ) : (
           <ResponsiveContainer width="100%" height={280}>

@@ -4,7 +4,7 @@ export const DASHBOARD_HELP = {
   kpiValidCertificates:
     'Certificados de residencia fiscal actualmente vigentes. Un certificado vigente es necesario para solicitar pagos.',
   kpiExpiringCertificates:
-    'Certificados vencidos o próximos a vencer en los próximos 90 días. Renueva los certificados antes de su vencimiento para evitar bloqueos en pagos.',
+    'Certificados vencidos o próximos a vencer en los próximos 120 días. Renueva los certificados antes de su vencimiento para evitar bloqueos en pagos.',
   kpiPendingPayments:
     'Solicitudes de pago en cola esperando procesamiento por el departamento financiero.',
   kpiInApproval:

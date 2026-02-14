@@ -15,7 +15,6 @@ interface GInvAccountingState {
     notes?: string,
   ) => Promise<{ error?: string }>
   sendToAccounting: (intakeItemId: string) => Promise<{ error?: string }>
-  exportCsvData: () => string
 }
 
 export const useGInvAccounting = create<GInvAccountingState>((set, get) => ({
@@ -32,11 +31,22 @@ export const useGInvAccounting = create<GInvAccountingState>((set, get) => ({
       .in('status', ['approved', 'sent_to_accounting', 'posted'])
       .order('created_at', { ascending: true })
 
+    const { data: postingData, error: postingsError } = await supabase
+      .from('ginv_sap_postings')
+      .select('*')
+      .order('created_at', { ascending: false })
+
     if (error) {
       set({ error: error.message, loading: false })
       return
     }
-    set({ items: data ?? [], loading: false })
+
+    if (postingsError) {
+      set({ error: postingsError.message, loading: false })
+      return
+    }
+
+    set({ items: data ?? [], postings: postingData ?? [], loading: false })
   },
 
   sendToAccounting: async (intakeItemId) => {
@@ -54,7 +64,7 @@ export const useGInvAccounting = create<GInvAccountingState>((set, get) => ({
 
   postToSap: async (intakeItemId, sapReference, postedBy, notes) => {
     // 1. Create SAP posting record
-    const { error: postError } = await supabase
+    const { data: posting, error: postError } = await supabase
       .from('ginv_sap_postings')
       .insert({
         intake_item_id: intakeItemId,
@@ -63,6 +73,8 @@ export const useGInvAccounting = create<GInvAccountingState>((set, get) => ({
         posted_by: postedBy,
         notes: notes || null,
       })
+      .select()
+      .single()
 
     if (postError) return { error: postError.message }
 
@@ -75,23 +87,10 @@ export const useGInvAccounting = create<GInvAccountingState>((set, get) => ({
       .single()
 
     if (updateError) return { error: updateError.message }
-    set({ items: get().items.map((i) => (i.id === intakeItemId ? data : i)) })
+    set({
+      items: get().items.map((i) => (i.id === intakeItemId ? data : i)),
+      postings: posting ? [posting, ...get().postings] : get().postings,
+    })
     return {}
-  },
-
-  exportCsvData: () => {
-    const items = get().items.filter((i) => i.status === 'sent_to_accounting')
-    const headers = ['tipo', 'nro_factura', 'fecha_factura', 'importe', 'moneda', 'concepto', 'job_id', 'vendor_id']
-    const rows = items.map((i) => [
-      i.type,
-      i.invoice_number ?? '',
-      i.invoice_date ?? '',
-      String(i.amount),
-      i.currency,
-      (i.concept_text ?? '').replace(/,/g, ';'),
-      i.job_id ?? '',
-      i.vendor_id ?? '',
-    ])
-    return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
   },
 }))

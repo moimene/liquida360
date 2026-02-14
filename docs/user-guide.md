@@ -62,9 +62,8 @@ Control del ciclo de vida de certificados de residencia fiscal.
 #### Estados
 | Estado | Descripcion |
 |--------|------------|
-| Vigente (verde) | Certificado valido, mas de 90 dias para vencer |
-| Por vencer (amarillo) | Menos de 90 dias para vencer |
-| Por vencer (rojo) | Menos de 30 dias para vencer |
+| Vigente (verde) | Certificado valido, mas de 120 dias para vencer |
+| Por vencer (rojo) | Menos de 120 dias para vencer |
 | Vencido (rojo) | Fecha de vencimiento superada |
 
 #### Crear Certificado
@@ -86,7 +85,7 @@ Flujo completo de liquidacion de pagos a corresponsales.
 
 #### Flujo de Estados
 ```
-Borrador → Pendiente aprobacion → Aprobada → Pago solicitado → Pagada
+Borrador → Pendiente aprobacion → Aceptada → Fecha de pago → Pagada
                                 ↘ Rechazada (puede reenviarse)
 ```
 
@@ -154,7 +153,7 @@ Sistema de notificaciones en tiempo real.
 #### Tipos de Notificacion
 | Tipo | Cuando se genera |
 |------|-----------------|
-| Certificado por vencer | 90 y 30 dias antes del vencimiento |
+| Certificado por vencer | 120 dias antes del vencimiento |
 | Certificado vencido | Al dia siguiente del vencimiento |
 | Liquidacion aprobada | Cuando un supervisor aprueba |
 | Liquidacion rechazada | Cuando un supervisor rechaza |

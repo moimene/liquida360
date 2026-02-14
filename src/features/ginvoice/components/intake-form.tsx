@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
 import { Loader2, FileUp } from 'lucide-react'
+import { resolveFxToEur } from '../lib/fx-audit'
 
 interface IntakeFormProps {
   open: boolean
@@ -37,6 +38,20 @@ export function IntakeForm({ open, onClose, onSubmit, onFileChange, submitting }
   })
 
   const intakeType = watch('type')
+  const currency = watch('currency') ?? 'EUR'
+  const watchedAmount = watch('amount')
+  const amount = typeof watchedAmount === 'number' && Number.isFinite(watchedAmount) ? watchedAmount : 0
+  const watchedExchangeRate = watch('exchange_rate_to_eur')
+  const exchangeRateToEur = typeof watchedExchangeRate === 'number' && Number.isFinite(watchedExchangeRate)
+    ? watchedExchangeRate
+    : watchedExchangeRate === null
+      ? null
+      : undefined
+  const fxPreview = resolveFxToEur({
+    currency,
+    amount,
+    exchangeRateToEur,
+  })
 
   useEffect(() => {
     if (open) {
@@ -55,7 +70,7 @@ export function IntakeForm({ open, onClose, onSubmit, onFileChange, submitting }
     <Dialog
       open={open}
       onClose={handleClose}
-      title="Nueva Ingesta"
+      title="Nueva Subida"
       description="Registra una factura de proveedor o tasa oficial"
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
@@ -140,17 +155,100 @@ export function IntakeForm({ open, onClose, onSubmit, onFileChange, submitting }
           </div>
         </div>
 
-        {/* Invoice number + date */}
+        {currency !== 'EUR' && (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="intake-exchange-rate">
+              Tipo de cambio a EUR <span style={{ color: 'var(--status-error)' }}>*</span>
+            </Label>
+            <Input
+              id="intake-exchange-rate"
+              {...register('exchange_rate_to_eur', {
+                setValueAs: (value) => {
+                  if (value === '' || value === null || typeof value === 'undefined') return null
+                  const parsed = Number(value)
+                  return Number.isFinite(parsed) ? parsed : value
+                },
+              })}
+              type="number"
+              step="0.000001"
+              min="0.000001"
+              placeholder="1.084500"
+            />
+            {errors.exchange_rate_to_eur && (
+              <span className="text-xs" style={{ color: 'var(--status-error)' }}>
+                {errors.exchange_rate_to_eur.message}
+              </span>
+            )}
+          </div>
+        )}
+
+        <div
+          className="px-3 py-2"
+          style={{
+            border: '1px solid var(--g-border-default)',
+            borderRadius: 'var(--g-radius-md)',
+            backgroundColor: 'var(--g-surface-hover)',
+          }}
+        >
+          <p className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+            Importe EUR (auditoria)
+          </p>
+          <p className="text-sm font-medium" style={{ color: 'var(--g-text-primary)' }}>
+            {fxPreview.value
+              ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(fxPreview.value.amountEur)
+              : 'Pendiente de tipo de cambio'}
+          </p>
+        </div>
+
+        {/* Reference number + date */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="intake-invoice-number">Nº Factura</Label>
-            <Input id="intake-invoice-number" {...register('invoice_number')} placeholder="FV-001" />
+            <Label htmlFor="intake-reference-number">
+              {intakeType === 'official_fee' ? 'No. NRC' : 'No. Factura'}
+            </Label>
+            {intakeType === 'official_fee' ? (
+              <Input
+                id="intake-reference-number"
+                {...register('nrc_number')}
+                placeholder="NRC-0001"
+              />
+            ) : (
+              <Input
+                id="intake-reference-number"
+                {...register('invoice_number')}
+                placeholder="FV-001"
+              />
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="intake-invoice-date">Fecha factura</Label>
             <Input id="intake-invoice-date" {...register('invoice_date')} type="date" />
           </div>
         </div>
+
+        {intakeType === 'official_fee' && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="intake-organism">Organismo</Label>
+              <Select id="intake-organism" {...register('official_organism')}>
+                <option value="">Seleccionar organismo</option>
+                <option value="EPO">EPO</option>
+                <option value="EUIPO">EUIPO</option>
+                <option value="OEPM">OEPM</option>
+                <option value="WIPO">WIPO</option>
+                <option value="OTRO">Otro</option>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="intake-tariff-type">Tipo de tarifa</Label>
+              <Select id="intake-tariff-type" {...register('tariff_type')}>
+                <option value="">Seleccionar tarifa</option>
+                <option value="general">General</option>
+                <option value="special">Especial</option>
+              </Select>
+            </div>
+          </div>
+        )}
 
         {/* Concept */}
         <div className="flex flex-col gap-1.5">

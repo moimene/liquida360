@@ -24,21 +24,12 @@ export function getCertificateStatus(expiryDate: string): CertificateStatusInfo 
     }
   }
 
-  if (daysRemaining <= CERTIFICATE_ALERT_DEFAULTS.SECOND_ALERT_DAYS) {
-    return {
-      status: 'expiring_soon',
-      label: `Vence en ${daysRemaining} días`,
-      daysRemaining,
-      badgeVariant: 'destructive',
-    }
-  }
-
   if (daysRemaining <= CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS) {
     return {
       status: 'expiring_soon',
       label: `Vence en ${daysRemaining} días`,
       daysRemaining,
-      badgeVariant: 'warning',
+      badgeVariant: 'destructive',
     }
   }
 

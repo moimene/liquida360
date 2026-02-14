@@ -171,6 +171,11 @@ const GInvDeliveryPage = lazy(() =>
     default: m.DeliveryPage,
   })),
 )
+const GInvCollectionsPage = lazy(() =>
+  import('@/features/ginvoice/components/collections-page').then((m) => ({
+    default: m.CollectionsPage,
+  })),
+)
 const GInvPlatformsPage = lazy(() =>
   import('@/features/ginvoice/components/platforms-page').then((m) => ({
     default: m.PlatformsPage,
@@ -238,8 +243,16 @@ function App() {
               <Route path="billing" element={<GInvBillingPage />} />
               <Route path="invoices" element={<GInvInvoicesPage />} />
               <Route path="delivery" element={<GInvDeliveryPage />} />
+              <Route path="collections" element={<GInvCollectionsPage />} />
               <Route path="platforms" element={<GInvPlatformsPage />} />
-              <Route path="settings" element={<GInvSettingsPage />} />
+              <Route
+                path="settings"
+                element={
+                  <GInvoiceRoute allowedRoles={['ginv_admin']}>
+                    <GInvSettingsPage />
+                  </GInvoiceRoute>
+                }
+              />
             </Route>
 
             {/* Internal routes (pagador, supervisor, financiero, admin) */}

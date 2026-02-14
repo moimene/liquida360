@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import type { GInvDelivery } from '@/types'
+import { updateInvoiceIntakeLifecycleStatus } from '../lib/intake-lifecycle'
 
 interface Recipient {
   name: string
@@ -20,8 +21,8 @@ interface GInvDeliveriesState {
     body: string
     sentBy: string
     attachments?: { file_path: string; name: string }[]
-  }) => Promise<{ data?: GInvDelivery; error?: string }>
-  markDelivered: (invoiceId: string) => Promise<{ error?: string }>
+  }) => Promise<{ data?: GInvDelivery; error?: string; warning?: string }>
+  markDelivered: (invoiceId: string) => Promise<{ error?: string; warning?: string }>
 }
 
 export const useGInvDeliveries = create<GInvDeliveriesState>((set, get) => ({
@@ -68,7 +69,16 @@ export const useGInvDeliveries = create<GInvDeliveriesState>((set, get) => ({
       .update({ status: 'delivered' })
       .eq('id', clientInvoiceId)
 
+    const lifecycle = await updateInvoiceIntakeLifecycleStatus(clientInvoiceId, 'archived')
+
     set({ deliveries: [data, ...get().deliveries] })
+    if (lifecycle.error) {
+      return {
+        data,
+        warning: `Entrega registrada, pero no se pudo archivar el lote: ${lifecycle.error}`,
+      }
+    }
+
     return { data }
   },
 
@@ -79,6 +89,12 @@ export const useGInvDeliveries = create<GInvDeliveriesState>((set, get) => ({
       .eq('id', invoiceId)
 
     if (error) return { error: error.message }
+    const lifecycle = await updateInvoiceIntakeLifecycleStatus(invoiceId, 'archived')
+    if (lifecycle.error) {
+      return {
+        warning: `Factura marcada como entregada, pero sin archivar intake: ${lifecycle.error}`,
+      }
+    }
     return {}
   },
 }))

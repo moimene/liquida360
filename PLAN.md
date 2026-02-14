@@ -1,5 +1,18 @@
 # LIQUIDA360 - Plan de Implantación
 
+## Evolucion 2026-02-14
+- [x] Incorporado plan de evolucion funcional en `docs/evolution-plan-2026-02-14.md`
+- [x] Ejecutada primera ola de quick wins (portal + G-Invoice) en UI/modelo
+- [x] Preparada migracion `011_portal_ginvoice_evolution.sql` para tipos de certificado, datos bancarios y campos de tasas
+- [x] Completada fase operativa adicional en G-Invoice: ordenacion multi-criterio, exportacion XLSX y columnas Job/cliente/pais
+- [x] Completada Fase 3: ciclo `Facturado/Archivado` sincronizado, deep-link SAP, anexado automatico de justificantes y auditoria FX
+- [x] Preparada migracion `013_ginv_sap_payload_and_fx_guardrails.sql` para metadatos SAP y refuerzo de conversiones
+- [x] Arrancada Fase 4 (CxC): vista operativa de facturas pendientes/vencidas de cobro y baseline de datos CxC
+- [x] Preparada migracion `014_ginv_accounts_receivable_baseline.sql` para estado/saldos/vencimiento de factura cliente
+- [x] Completados entregables Fase 4 restantes: exportes CxC deduplicados y flujo semiautomatico de reclamaciones
+- [x] Preparada migracion `015_ginv_collections_claims.sql` para aprobacion/envio de reclamaciones con copia a responsables
+- [x] Preparada migracion `016_ginv_collection_claims_hardening.sql` para hardening de permisos/transiciones en reclamaciones CxC
+
 ## Fase 0: Fundación (Sprint 0)
 - [x] Crear CLAUDE.md con reglas del proyecto y skills activas
 - [x] Crear PRD (docs/product-requirements.md)

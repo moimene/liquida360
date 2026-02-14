@@ -22,7 +22,7 @@ interface PortalNavItem {
 
 const portalNav: PortalNavItem[] = [
   { label: 'Inicio', path: '/portal', icon: LayoutDashboard },
-  { label: 'Facturas', path: '/portal/invoices', icon: Receipt },
+  { label: 'Mis facturas', path: '/portal/invoices', icon: Receipt },
   { label: 'Certificados', path: '/portal/certificates', icon: FileCheck },
   { label: 'Mensajes', path: '/portal/messages', icon: MessageSquare },
   { label: 'Mi perfil', path: '/portal/profile', icon: UserCircle },

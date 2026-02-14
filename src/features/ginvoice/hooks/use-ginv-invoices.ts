@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import type { GInvClientInvoice } from '@/types'
+import { updateBatchIntakeLifecycleStatus } from '../lib/intake-lifecycle'
+import { buildSapInvoicePayload, getSapPayloadFxSummary } from '../lib/fx-audit'
+import { deriveDueDate } from '../lib/collections'
 
 type InvoiceStatus = GInvClientInvoice['status']
 
@@ -16,7 +19,7 @@ interface GInvInvoicesState {
     sapNumber: string,
     sapDate: string,
     pdfFile?: File,
-  ) => Promise<{ error?: string }>
+  ) => Promise<{ error?: string; warning?: string }>
   requestPartnerApproval: (id: string) => Promise<{ error?: string }>
   approveAsPartner: (id: string) => Promise<{ error?: string }>
 }
@@ -71,8 +74,20 @@ export const useGInvInvoices = create<GInvInvoicesState>((set, get) => ({
 
   registerSapInvoice: async (id, sapNumber, sapDate, pdfFile) => {
     // Ensure we keep or create a PDF for the invoice
-    const existing = get().invoices.find((inv) => inv.id === id)?.pdf_file_path
+    let existingInvoice = get().invoices.find((inv) => inv.id === id)
+    if (!existingInvoice) {
+      const { data: fetchedInvoice, error: fetchedInvoiceError } = await supabase
+        .from('ginv_client_invoices')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (fetchedInvoiceError) return { error: fetchedInvoiceError.message }
+      existingInvoice = fetchedInvoice
+    }
+
+    const existing = existingInvoice?.pdf_file_path
     let pdfPath: string | null = existing ?? null
+    const warnings: string[] = []
 
     if (!pdfFile && !pdfPath) {
       return { error: 'Debes adjuntar el PDF de la factura para emitir en SAP.' }
@@ -90,12 +105,62 @@ export const useGInvInvoices = create<GInvInvoicesState>((set, get) => ({
       pdfPath = path
     }
 
+    let sapPayload: Record<string, unknown> = {}
+    if (existingInvoice?.batch_id) {
+      const { data: batchItems, error: batchItemsError } = await supabase
+        .from('ginv_billing_batch_items')
+        .select('intake_item_id,attach_fee,decision')
+        .eq('batch_id', existingInvoice.batch_id)
+
+      if (batchItemsError) {
+        warnings.push(`No se pudo preparar anexos/FX del lote: ${batchItemsError.message}`)
+      } else {
+        const intakeIds = (batchItems ?? []).map((item) => item.intake_item_id)
+        const { data: intakeItems, error: intakeError } = intakeIds.length === 0
+          ? { data: [], error: null }
+          : await supabase
+            .from('ginv_intake_items')
+            .select('id,type,currency,amount,exchange_rate_to_eur,amount_eur,file_path,invoice_number,nrc_number')
+            .in('id', intakeIds)
+
+        if (intakeError) {
+          warnings.push(`No se pudo cargar detalle de conversion/justificantes: ${intakeError.message}`)
+        } else {
+          sapPayload = buildSapInvoicePayload(batchItems ?? [], intakeItems ?? [])
+          const fxSummary = getSapPayloadFxSummary(sapPayload)
+          const missingAttachmentsRaw = (sapPayload.attachment_warnings as Record<string, unknown> | undefined)?.missing_files_count
+          const missingAttachments = typeof missingAttachmentsRaw === 'number' && Number.isFinite(missingAttachmentsRaw)
+            ? missingAttachmentsRaw
+            : 0
+
+          if (missingAttachments > 0) {
+            warnings.push(`Hay ${missingAttachments} tasa(s) sin justificante y no se anexaron automaticamente.`)
+          }
+          if (fxSummary.missingRatesCount > 0) {
+            warnings.push(`Hay ${fxSummary.missingRatesCount} item(s) sin tipo de cambio auditable.`)
+          }
+        }
+      }
+    }
+
+    const fxSummary = getSapPayloadFxSummary(sapPayload)
+    const dueDate = deriveDueDate({
+      due_date: existingInvoice?.due_date ?? null,
+      sap_invoice_date: sapDate,
+    })
+
     const { data, error } = await supabase
       .from('ginv_client_invoices')
       .update({
         sap_invoice_number: sapNumber,
         sap_invoice_date: sapDate,
         pdf_file_path: pdfPath,
+        sap_payload: sapPayload,
+        due_date: dueDate,
+        amount_due_eur: fxSummary.totalAmountEur,
+        collection_status: 'pending',
+        amount_paid_eur: 0,
+        paid_at: null,
         status: 'issued',
       })
       .eq('id', id)
@@ -104,7 +169,15 @@ export const useGInvInvoices = create<GInvInvoicesState>((set, get) => ({
 
     if (error) return { error: error.message }
     set({ invoices: get().invoices.map((inv) => (inv.id === id ? data : inv)) })
-    return {}
+
+    if (data.batch_id) {
+      const lifecycle = await updateBatchIntakeLifecycleStatus(data.batch_id, 'billed')
+      if (lifecycle.error) {
+        warnings.push(`Factura emitida, pero no se pudo marcar el lote como facturado: ${lifecycle.error}`)
+      }
+    }
+
+    return warnings.length > 0 ? { warning: warnings.join(' ') } : {}
   },
 
   requestPartnerApproval: async (id) => {

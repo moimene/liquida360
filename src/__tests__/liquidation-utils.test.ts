@@ -34,7 +34,7 @@ describe('liquidation-utils', () => {
   describe('getStatusConfig', () => {
     it('returns correct config for known status', () => {
       const config = getStatusConfig('approved')
-      expect(config.label).toBe('Aprobada')
+      expect(config.label).toBe('Aceptada')
       expect(config.badgeVariant).toBe('success')
     })
 

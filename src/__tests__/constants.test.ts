@@ -14,8 +14,8 @@ describe('constants', () => {
   })
 
   describe('CERTIFICATE_ALERT_DEFAULTS', () => {
-    it('first alert at 90 days', () => {
-      expect(CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS).toBe(90)
+    it('first alert at 120 days', () => {
+      expect(CERTIFICATE_ALERT_DEFAULTS.FIRST_ALERT_DAYS).toBe(120)
     })
 
     it('second alert at 30 days', () => {

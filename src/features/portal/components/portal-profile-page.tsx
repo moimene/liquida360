@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { UserCircle, Save, MapPin, Building, Globe, Hash } from 'lucide-react'
+import { UserCircle, Save, MapPin, Building, Globe, Hash, Landmark, FileUp, FileText, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +17,12 @@ export function PortalProfilePage() {
   const [address, setAddress] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [bankAccountHolder, setBankAccountHolder] = useState('')
+  const [bankAccountIban, setBankAccountIban] = useState('')
+  const [bankSwiftBic, setBankSwiftBic] = useState('')
+  const [bankCertificateFile, setBankCertificateFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
+  const bankFileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (user?.id) {
@@ -31,6 +36,9 @@ export function PortalProfilePage() {
         setAddress(correspondent.address ?? '')
         setEmail(correspondent.email ?? '')
         setPhone(correspondent.phone ?? '')
+        setBankAccountHolder(correspondent.bank_account_holder ?? '')
+        setBankAccountIban(correspondent.bank_account_iban ?? '')
+        setBankSwiftBic(correspondent.bank_swift_bic ?? '')
       })
     }
   }, [correspondent])
@@ -43,18 +51,35 @@ export function PortalProfilePage() {
     e.preventDefault()
     if (!correspondent?.id) return
 
+    const bankDataChanged =
+      bankAccountHolder !== (correspondent.bank_account_holder ?? '') ||
+      bankAccountIban !== (correspondent.bank_account_iban ?? '') ||
+      bankSwiftBic !== (correspondent.bank_swift_bic ?? '')
+
+    if (bankDataChanged && !bankCertificateFile) {
+      toast.error('Debes adjuntar un nuevo certificado de titularidad para guardar cambios bancarios')
+      return
+    }
+
     setSaving(true)
     const { error } = await updateProfile(correspondent.id, {
       address,
       email: email || null,
       phone: phone || null,
-    })
+      bank_account_holder: bankAccountHolder || null,
+      bank_account_iban: bankAccountIban || null,
+      bank_swift_bic: bankSwiftBic || null,
+    }, bankCertificateFile ?? undefined)
     setSaving(false)
 
     if (error) {
       toast.error('Error al guardar', { description: error })
     } else {
       toast.success('Perfil actualizado correctamente')
+      setBankCertificateFile(null)
+      if (bankFileRef.current) {
+        bankFileRef.current.value = ''
+      }
     }
   }
 
@@ -105,9 +130,11 @@ export function PortalProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
-            Datos de contacto
+            Datos de contacto y bancarios
           </CardTitle>
-          <CardDescription>Puedes actualizar tu direccion y datos de contacto</CardDescription>
+          <CardDescription>
+            Puedes actualizar datos de contacto y cuenta bancaria.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -142,6 +169,107 @@ export function PortalProfilePage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+34 600 000 000"
               />
+            </div>
+
+            <div
+              className="my-2"
+              style={{ borderTop: '1px solid var(--g-border-default)' }}
+            />
+
+            <div className="flex items-center gap-2">
+              <Landmark className="h-4 w-4" style={{ color: 'var(--g-brand-3308)' }} />
+              <p className="text-sm font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                Datos bancarios
+              </p>
+            </div>
+
+            <div
+              className="flex items-start gap-2 p-3 text-xs"
+              style={{
+                backgroundColor: 'var(--status-warning-bg)',
+                color: 'var(--status-warning)',
+                borderRadius: 'var(--g-radius-sm)',
+              }}
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Si cambias los datos bancarios, debes adjuntar un nuevo certificado de titularidad.
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-bank-holder">Titular cuenta bancaria</Label>
+              <Input
+                id="profile-bank-holder"
+                value={bankAccountHolder}
+                onChange={(e) => setBankAccountHolder(e.target.value)}
+                placeholder="Titular de la cuenta"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="profile-bank-iban">Cuenta bancaria (IBAN)</Label>
+                <Input
+                  id="profile-bank-iban"
+                  value={bankAccountIban}
+                  onChange={(e) => setBankAccountIban(e.target.value)}
+                  placeholder="ES12 3456 7890 1234 5678 9012"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="profile-bank-swift">SWIFT / BIC</Label>
+                <Input
+                  id="profile-bank-swift"
+                  value={bankSwiftBic}
+                  onChange={(e) => setBankSwiftBic(e.target.value)}
+                  placeholder="BBVAESMMXXX"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="profile-bank-cert">Certificado titularidad bancaria (PDF)</Label>
+              <label
+                htmlFor="profile-bank-cert"
+                className="flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors"
+                style={{
+                  border: '1px dashed var(--g-border-default)',
+                  borderRadius: 'var(--g-radius-sm)',
+                  color: 'var(--g-text-secondary)',
+                }}
+              >
+                <FileUp className="h-4 w-4" />
+                <span className="text-sm">
+                  {bankCertificateFile ? bankCertificateFile.name : 'Seleccionar certificado...'}
+                </span>
+              </label>
+              <input
+                ref={bankFileRef}
+                id="profile-bank-cert"
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={(event) => setBankCertificateFile(event.target.files?.[0] ?? null)}
+              />
+
+              {correspondent.bank_certificate_url && (
+                <a
+                  href={correspondent.bank_certificate_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs"
+                  style={{ color: 'var(--g-brand-3308)' }}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Ver certificado actual
+                </a>
+              )}
+              {correspondent.bank_data_updated_at && (
+                <span className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                  Ultima actualizacion: {new Date(correspondent.bank_data_updated_at).toLocaleDateString('es-ES')}
+                </span>
+              )}
             </div>
 
             <div className="flex justify-end mt-2">

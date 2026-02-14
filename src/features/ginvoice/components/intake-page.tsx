@@ -1,30 +1,103 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useGInvIntake } from '../hooks/use-ginv-intake'
+import { useGInvJobs } from '../hooks/use-ginv-jobs'
 import { IntakeForm } from './intake-form'
 import { INTAKE_STATUS_CONFIG, INTAKE_TYPE_LABELS } from '../constants/ginvoice-utils'
 import { useAuth } from '@/features/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Plus, Search, Loader2 } from 'lucide-react'
+import { Plus, Search, Loader2, Download, ArrowUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import type { IntakeFormData } from '../schemas/intake-schema'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
+import type { GInvIntakeItem } from '@/types'
+import { exportTableToXlsx, xlsxFilename } from '@/lib/xlsx-export'
+
+type IntakeSortField =
+  | 'created_at'
+  | 'amount'
+  | 'reference'
+  | 'job_code'
+  | 'client_name'
+  | 'client_country'
+  | 'status'
+  | 'type'
+
+type SortDirection = 'asc' | 'desc'
+
+const INTAKE_SORT_OPTIONS: Array<{ value: IntakeSortField; label: string }> = [
+  { value: 'created_at', label: 'Fecha de creación' },
+  { value: 'amount', label: 'Importe' },
+  { value: 'reference', label: 'No. Factura / NRC' },
+  { value: 'job_code', label: 'Job' },
+  { value: 'client_name', label: 'Cliente' },
+  { value: 'client_country', label: 'País del cliente' },
+  { value: 'status', label: 'Estado' },
+  { value: 'type', label: 'Tipo' },
+]
+
+function compareValues(a: number | string, b: number | string): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  return String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
+}
 
 export function IntakePage() {
   const { items, loading, fetchItems, createItem, submitItem, approveItem, rejectItem } = useGInvIntake()
+  const { jobs, fetchJobs } = useGInvJobs()
   const { user, ginvRole } = useAuth()
   const [formOpen, setFormOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [primarySort, setPrimarySort] = useState<IntakeSortField>('created_at')
+  const [primaryDirection, setPrimaryDirection] = useState<SortDirection>('desc')
+  const [secondarySort, setSecondarySort] = useState<IntakeSortField>('amount')
+  const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('desc')
   const [pendingFile, setPendingFile] = useState<File | undefined>()
 
   useEffect(() => {
     fetchItems()
-  }, [fetchItems])
+    fetchJobs()
+  }, [fetchItems, fetchJobs])
+
+  const jobsById = useMemo(() => new Map(jobs.map((job) => [job.id, job])), [jobs])
+
+  const getSortValue = useCallback((item: GInvIntakeItem, field: IntakeSortField): number | string => {
+    const job = item.job_id ? jobsById.get(item.job_id) : undefined
+    switch (field) {
+      case 'created_at':
+        return new Date(item.created_at).getTime()
+      case 'amount':
+        return item.amount
+      case 'reference':
+        return (item.type === 'official_fee'
+          ? item.nrc_number || item.invoice_number || ''
+          : item.invoice_number || '').toLowerCase()
+      case 'job_code':
+        return (job?.job_code ?? '').toLowerCase()
+      case 'client_name':
+        return (job?.client_name ?? '').toLowerCase()
+      case 'client_country':
+        return (job?.client_country ?? '').toLowerCase()
+      case 'status':
+        return item.status
+      case 'type':
+        return INTAKE_TYPE_LABELS[item.type] ?? item.type
+    }
+  }, [jobsById])
+
+  const compareByField = useCallback((
+    left: GInvIntakeItem,
+    right: GInvIntakeItem,
+    field: IntakeSortField,
+    direction: SortDirection,
+  ): number => {
+    const base = compareValues(getSortValue(left, field), getSortValue(right, field))
+    return direction === 'asc' ? base : base * -1
+  }, [getSortValue])
 
   const filtered = useMemo(() => {
     let result = items
@@ -39,11 +112,33 @@ export function IntakePage() {
       result = result.filter(
         (i) =>
           (i.invoice_number ?? '').toLowerCase().includes(q) ||
-          (i.concept_text ?? '').toLowerCase().includes(q),
+          (i.nrc_number ?? '').toLowerCase().includes(q) ||
+          (i.official_organism ?? '').toLowerCase().includes(q) ||
+          (i.concept_text ?? '').toLowerCase().includes(q) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.job_code ?? '').toLowerCase().includes(q) : false) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.client_name ?? '').toLowerCase().includes(q) : false) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.client_country ?? '').toLowerCase().includes(q) : false),
       )
     }
-    return result
-  }, [items, statusFilter, typeFilter, search])
+    return [...result].sort((left, right) => {
+      const primary = compareByField(left, right, primarySort, primaryDirection)
+      if (primary !== 0) return primary
+      const secondary = compareByField(left, right, secondarySort, secondaryDirection)
+      if (secondary !== 0) return secondary
+      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime()
+    })
+  }, [
+    items,
+    statusFilter,
+    typeFilter,
+    search,
+    jobsById,
+    primarySort,
+    primaryDirection,
+    secondarySort,
+    secondaryDirection,
+    compareByField,
+  ])
 
   async function handleCreate(data: IntakeFormData) {
     if (!user) return
@@ -67,6 +162,43 @@ export function IntakePage() {
     return counts
   }, [items])
 
+  async function handleExportXlsx() {
+    if (filtered.length === 0) {
+      toast.error('No hay subidas para exportar')
+      return
+    }
+
+    try {
+      await exportTableToXlsx(
+        filtered,
+        [
+          { header: 'Tipo', accessor: (item) => INTAKE_TYPE_LABELS[item.type] ?? item.type },
+          { header: 'No. Factura / NRC', accessor: (item) => item.type === 'official_fee' ? item.nrc_number || item.invoice_number || '' : item.invoice_number || '' },
+          { header: 'Job', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.job_code ?? '' : '') },
+          { header: 'Cliente', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.client_name ?? '' : '') },
+          { header: 'País cliente', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.client_country ?? '' : '') },
+          { header: 'Importe', accessor: (item) => item.amount },
+          { header: 'Tipo cambio EUR', accessor: (item) => item.exchange_rate_to_eur ?? '' },
+          { header: 'Importe EUR', accessor: (item) => item.amount_eur ?? '' },
+          { header: 'Moneda', accessor: 'currency' },
+          { header: 'Concepto', accessor: 'concept_text' },
+          { header: 'Organismo', accessor: 'official_organism' },
+          {
+            header: 'Tarifa',
+            accessor: (item) => item.tariff_type === 'special' ? 'Especial' : item.tariff_type === 'general' ? 'General' : '',
+          },
+          { header: 'Estado', accessor: (item) => INTAKE_STATUS_CONFIG[item.status]?.label ?? item.status },
+          { header: 'Creado', accessor: (item) => new Date(item.created_at).toLocaleString('es-ES') },
+        ],
+        xlsxFilename('subidas'),
+        'Subidas',
+      )
+      toast.success('Excel exportado')
+    } catch {
+      toast.error('No se pudo exportar el Excel')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -75,16 +207,22 @@ export function IntakePage() {
             className="font-bold"
             style={{ fontSize: 'var(--g-text-h2)', color: 'var(--g-text-primary)' }}
           >
-            Ingesta Digital
+            Subidas
           </h1>
           <p style={{ color: 'var(--g-text-secondary)' }}>
             Facturas de proveedor y tasas oficiales
           </p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nueva Ingesta
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleExportXlsx} disabled={filtered.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar Excel
+          </Button>
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nueva Subida
+          </Button>
+        </div>
       </div>
 
       {/* KPI cards */}
@@ -117,7 +255,7 @@ export function IntakePage() {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--g-text-tertiary)' }} />
           <Input
-            placeholder="Buscar por nº factura o concepto..."
+            placeholder="Buscar por factura, NRC, concepto o cliente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -142,6 +280,48 @@ export function IntakePage() {
           <option value="vendor_invoice">Factura proveedor</option>
           <option value="official_fee">Tasa oficial</option>
         </Select>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4" style={{ color: 'var(--g-text-tertiary)' }} />
+          <span className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>Orden</span>
+        </div>
+        <Select
+          value={primarySort}
+          onChange={(e) => setPrimarySort(e.target.value as IntakeSortField)}
+          className="w-[220px]"
+        >
+          {INTAKE_SORT_OPTIONS.map((option) => (
+            <option key={`primary-${option.value}`} value={option.value}>
+              1o criterio: {option.label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={primaryDirection}
+          onChange={(e) => setPrimaryDirection(e.target.value as SortDirection)}
+          className="w-[180px]"
+        >
+          <option value="asc">1o ascendente</option>
+          <option value="desc">1o descendente</option>
+        </Select>
+        <Select
+          value={secondarySort}
+          onChange={(e) => setSecondarySort(e.target.value as IntakeSortField)}
+          className="w-[220px]"
+        >
+          {INTAKE_SORT_OPTIONS.map((option) => (
+            <option key={`secondary-${option.value}`} value={option.value}>
+              2o criterio: {option.label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={secondaryDirection}
+          onChange={(e) => setSecondaryDirection(e.target.value as SortDirection)}
+          className="w-[180px]"
+        >
+          <option value="asc">2o ascendente</option>
+          <option value="desc">2o descendente</option>
+        </Select>
       </div>
 
       {/* Table */}
@@ -162,9 +342,15 @@ export function IntakePage() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Tipo</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº Factura</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>No. Factura / NRC</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Job</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Cliente</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>País</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe</th>
+                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>TC EUR</th>
+                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe EUR</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
+                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Organismo / Tarifa</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
                 <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Creado</th>
                 <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
@@ -173,15 +359,16 @@ export function IntakePage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
+                  <td colSpan={13} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
                     {search || statusFilter !== 'all' || typeFilter !== 'all'
                       ? 'Sin resultados para estos filtros'
-                      : 'No hay items de ingesta'}
+                      : 'No hay subidas registradas'}
                   </td>
                 </tr>
               ) : (
                 filtered.map((item) => {
                   const statusConfig = INTAKE_STATUS_CONFIG[item.status] ?? INTAKE_STATUS_CONFIG.draft
+                  const job = item.job_id ? jobsById.get(item.job_id) : undefined
                   return (
                     <tr key={item.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                       <td className="px-4 py-3">
@@ -190,13 +377,39 @@ export function IntakePage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--g-text-primary)' }}>
-                        {item.invoice_number || '—'}
+                        {item.type === 'official_fee'
+                          ? item.nrc_number || item.invoice_number || '—'
+                          : item.invoice_number || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                        {job?.job_code ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 max-w-[220px] truncate" style={{ color: 'var(--g-text-secondary)' }}>
+                        {job?.client_name ?? '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                        {job?.client_country ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-right font-medium" style={{ color: 'var(--g-text-primary)' }}>
                         {new Intl.NumberFormat('es-ES', { style: 'currency', currency: item.currency }).format(item.amount)}
                       </td>
+                      <td className="px-4 py-3 text-right text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                        {item.exchange_rate_to_eur
+                          ? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 4, maximumFractionDigits: 6 }).format(item.exchange_rate_to_eur)
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                        {typeof item.amount_eur === 'number'
+                          ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.amount_eur)
+                          : '—'}
+                      </td>
                       <td className="px-4 py-3 max-w-[200px] truncate" style={{ color: 'var(--g-text-secondary)' }}>
                         {item.concept_text || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                        {item.type === 'official_fee'
+                          ? `${item.official_organism ?? '—'} / ${item.tariff_type === 'special' ? 'Especial' : item.tariff_type === 'general' ? 'General' : '—'}`
+                          : '—'}
                       </td>
                       <td className="px-4 py-3">
                         <span

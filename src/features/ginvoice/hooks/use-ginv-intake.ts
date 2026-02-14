@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
 import type { GInvIntakeItem } from '@/types'
 import type { IntakeFormData } from '../schemas/intake-schema'
+import { resolveFxToEur } from '../lib/fx-audit'
 
 interface GInvIntakeState {
   items: GInvIntakeItem[]
@@ -102,15 +103,29 @@ export const useGInvIntake = create<GInvIntakeState>((set, get) => ({
       filePath = path
     }
 
+    const fxResolved = resolveFxToEur({
+      currency: formData.currency,
+      amount: formData.amount,
+      exchangeRateToEur: formData.exchange_rate_to_eur,
+    })
+    if (!fxResolved.value) {
+      return { error: fxResolved.error }
+    }
+
     const payload = {
       type: formData.type,
       vendor_id: formData.vendor_id || null,
       job_id: formData.job_id || null,
       currency: formData.currency,
       amount: formData.amount,
+      amount_eur: fxResolved.value.amountEur,
+      exchange_rate_to_eur: fxResolved.value.exchangeRateToEur,
       invoice_number: formData.invoice_number || null,
+      nrc_number: formData.nrc_number || null,
       invoice_date: formData.invoice_date || null,
       concept_text: formData.concept_text || null,
+      official_organism: formData.official_organism || null,
+      tariff_type: formData.tariff_type || null,
       approver_user_id: formData.approver_user_id || null,
       uttai_status_snapshot: uttaiSnapshot,
       vendor_compliance_snapshot: vendorCompliance,

@@ -92,7 +92,7 @@ export function DeliveryPage() {
     }
 
     setSubmitting(true)
-    const { error } = await createDelivery({
+    const { error, warning } = await createDelivery({
       clientInvoiceId: selectedInvoiceId,
       deliveryType: 'email',
       recipients: validRecipients,
@@ -107,6 +107,7 @@ export function DeliveryPage() {
       toast.error(error)
       return
     }
+    if (warning) toast.warning(warning)
     toast.success('Entrega registrada correctamente')
     setDialogOpen(false)
     resetForm()

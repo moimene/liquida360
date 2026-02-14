@@ -15,8 +15,8 @@ const STATUS_COLORS: Record<string, string> = {
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Borrador',
   pending_approval: 'Pendiente',
-  approved: 'Aprobada',
-  payment_requested: 'Pago solicitado',
+  approved: 'Aceptada',
+  payment_requested: 'Fecha de pago',
   paid: 'Pagada',
   rejected: 'Rechazada',
 }

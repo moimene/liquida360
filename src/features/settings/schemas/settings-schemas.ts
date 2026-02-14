@@ -16,7 +16,7 @@ export type AlertConfigFormInput = z.input<typeof alertConfigSchema>
 
 export const alertConfigDefaultValues: AlertConfigFormData = {
   alert_type: 'certificate_expiry',
-  days_before_expiry: 90,
+  days_before_expiry: 120,
   enabled: true,
 }
 

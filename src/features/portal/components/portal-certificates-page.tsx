@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useRef, type FormEvent } from 'react'
 import { toast } from 'sonner'
-import { Plus, FileCheck, Upload, X, Download, ExternalLink } from 'lucide-react'
+import { Plus, FileCheck, X, Download, ExternalLink } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,11 +18,27 @@ import { getCertificateStatus, formatDate, getDefaultExpiryDate } from '@/lib/ce
 import { COUNTRIES } from '@/lib/countries'
 import type { Certificate } from '@/types'
 
+type CertificateType = 'residence' | 'withholding' | 'bank_account'
+
+const CERTIFICATE_TYPE_OPTIONS: { value: CertificateType; label: string }[] = [
+  { value: 'residence', label: 'Certificado de residencia' },
+  { value: 'withholding', label: 'Certificado de retenciones' },
+  { value: 'bank_account', label: 'Certificado cuenta bancaria' },
+]
+
+function getCertificateTypeLabel(type: CertificateType) {
+  return (
+    CERTIFICATE_TYPE_OPTIONS.find((option) => option.value === type)?.label ??
+    'Certificado'
+  )
+}
+
 export function PortalCertificatesPage() {
   const user = useAuth((s) => s.user)
   const { correspondent, fetchCorrespondent } = usePortalCorrespondent()
   const { certificates, loading, fetchCertificates, uploadCertificate } = usePortalCertificates()
   const [formOpen, setFormOpen] = useState(false)
+  const [activeType, setActiveType] = useState<CertificateType>('residence')
 
   useEffect(() => {
     if (user?.id) {
@@ -36,20 +52,26 @@ export function PortalCertificatesPage() {
     }
   }, [correspondent?.id, fetchCertificates])
 
+  const filteredCertificates = useMemo(
+    () => certificates.filter((certificate) => certificate.certificate_type === activeType),
+    [certificates, activeType],
+  )
+
   const stats = useMemo(() => {
-    const valid = certificates.filter(
-      (c) => getCertificateStatus(c.expiry_date).status === 'valid',
+    const valid = filteredCertificates.filter(
+      (certificate) => getCertificateStatus(certificate.expiry_date).status === 'valid',
     ).length
-    const expiringSoon = certificates.filter(
-      (c) => getCertificateStatus(c.expiry_date).status === 'expiring_soon',
+    const expiringSoon = filteredCertificates.filter(
+      (certificate) => getCertificateStatus(certificate.expiry_date).status === 'expiring_soon',
     ).length
-    const expired = certificates.filter(
-      (c) => getCertificateStatus(c.expiry_date).status === 'expired',
+    const expired = filteredCertificates.filter(
+      (certificate) => getCertificateStatus(certificate.expiry_date).status === 'expired',
     ).length
     return { valid, expiringSoon, expired }
-  }, [certificates])
+  }, [filteredCertificates])
 
   async function handleUpload(
+    certificateType: CertificateType,
     issuingCountry: string,
     issueDate: string,
     expiryDate: string,
@@ -59,6 +81,7 @@ export function PortalCertificatesPage() {
 
     const { error } = await uploadCertificate(
       correspondent.id,
+      certificateType,
       issuingCountry,
       issueDate,
       expiryDate,
@@ -75,17 +98,16 @@ export function PortalCertificatesPage() {
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1
             className="font-bold"
             style={{ fontSize: 'var(--g-text-h2)', color: 'var(--g-text-primary)' }}
           >
-            Certificados de residencia fiscal
+            Certificados
           </h1>
           <p style={{ fontSize: 'var(--g-text-body)', color: 'var(--g-text-secondary)' }}>
-            Gestiona tus certificados de residencia fiscal
+            Gestiona certificados de residencia, retenciones y cuenta bancaria
           </p>
         </div>
         <Button onClick={() => setFormOpen(true)}>
@@ -98,24 +120,44 @@ export function PortalCertificatesPage() {
         {PORTAL_HELP.certificatesPageInfo}
       </InfoPanel>
 
-      {/* Stats */}
+      <div className="flex flex-wrap gap-2">
+        {CERTIFICATE_TYPE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setActiveType(option.value)}
+            className="px-3 py-1.5 text-sm transition-colors"
+            style={{
+              borderRadius: 'var(--g-radius-md)',
+              color:
+                activeType === option.value
+                  ? 'var(--g-text-inverse)'
+                  : 'var(--g-text-secondary)',
+              backgroundColor:
+                activeType === option.value ? 'var(--g-brand-3308)' : 'var(--g-surface-muted)',
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Vigentes" value={stats.valid} variant="success" />
         <StatCard label="Proximos a vencer" value={stats.expiringSoon} variant="warning" />
         <StatCard label="Vencidos" value={stats.expired} variant="destructive" />
       </div>
 
-      {/* Certificates list */}
       {loading ? (
         <div className="flex justify-center py-12">
           <span style={{ color: 'var(--g-text-secondary)' }}>Cargando certificados...</span>
         </div>
-      ) : certificates.length === 0 ? (
+      ) : filteredCertificates.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-12">
             <FileCheck className="h-12 w-12" style={{ color: 'var(--g-text-secondary)' }} />
             <p style={{ color: 'var(--g-text-secondary)' }}>
-              No tienes certificados. Sube tu primer certificado de residencia fiscal.
+              No tienes certificados para este tipo.
             </p>
             <Button onClick={() => setFormOpen(true)}>
               <Plus className="h-4 w-4" />
@@ -125,28 +167,28 @@ export function PortalCertificatesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {certificates.map((cert) => (
+          {filteredCertificates.map((cert) => (
             <CertificateCard key={cert.id} certificate={cert} />
           ))}
         </div>
       )}
 
       <CertificateUploadDialog
+        key={activeType}
         open={formOpen}
         onOpenChange={setFormOpen}
         onUpload={handleUpload}
         defaultCountry={correspondent?.country ?? ''}
+        defaultType={activeType}
       />
     </div>
   )
 }
 
-/* -- Certificate Card -- */
-
 function CertificateCard({ certificate }: { certificate: Certificate }) {
   const statusInfo = getCertificateStatus(certificate.expiry_date)
   const countryName =
-    COUNTRIES.find((c) => c.code === certificate.issuing_country)?.name ??
+    COUNTRIES.find((country) => country.code === certificate.issuing_country)?.name ??
     certificate.issuing_country
 
   const badgeVariant =
@@ -174,6 +216,10 @@ function CertificateCard({ certificate }: { certificate: Certificate }) {
             </span>
           </div>
           <Badge variant={badgeVariant}>{statusLabel}</Badge>
+        </div>
+
+        <div className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+          {getCertificateTypeLabel(certificate.certificate_type)}
         </div>
 
         <div className="flex justify-between text-sm">
@@ -207,22 +253,31 @@ function CertificateCard({ certificate }: { certificate: Certificate }) {
   )
 }
 
-/* -- Upload Dialog -- */
-
 function CertificateUploadDialog({
   open,
   onOpenChange,
   onUpload,
   defaultCountry,
+  defaultType,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUpload: (country: string, issueDate: string, expiryDate: string, file?: File) => Promise<void>
+  onUpload: (
+    certificateType: CertificateType,
+    country: string,
+    issueDate: string,
+    expiryDate: string,
+    file?: File,
+  ) => Promise<void>
   defaultCountry: string
+  defaultType: CertificateType
 }) {
+  const [certificateType, setCertificateType] = useState<CertificateType>(defaultType)
   const [country, setCountry] = useState(defaultCountry)
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0])
-  const [expiryDate, setExpiryDate] = useState(getDefaultExpiryDate(new Date().toISOString().split('T')[0]))
+  const [expiryDate, setExpiryDate] = useState(
+    getDefaultExpiryDate(new Date().toISOString().split('T')[0]),
+  )
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -233,12 +288,12 @@ function CertificateUploadDialog({
     }
   }, [defaultCountry, country])
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
     if (!country || !issueDate || !expiryDate) return
 
     setSubmitting(true)
-    await onUpload(country, issueDate, expiryDate, file ?? undefined)
+    await onUpload(certificateType, country, issueDate, expiryDate, file ?? undefined)
     setSubmitting(false)
     setFile(null)
   }
@@ -252,118 +307,132 @@ function CertificateUploadDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      title="Nuevo certificado de residencia fiscal"
-      description="Sube un nuevo certificado de residencia fiscal con su documento adjunto."
+      title="Nuevo certificado"
+      description="Sube un certificado con su documento adjunto."
     >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cert-type">Tipo de certificado</Label>
+          <Select
+            id="cert-type"
+            value={certificateType}
+            onChange={(event) => setCertificateType(event.target.value as CertificateType)}
+            required
+          >
+            {CERTIFICATE_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="cert-country">Pais emisor</Label>
+          <Select
+            id="cert-country"
+            value={country}
+            onChange={(event) => setCountry(event.target.value)}
+            required
+          >
+            <option value="">Selecciona un pais</option>
+            {COUNTRIES.map((countryOption) => (
+              <option key={countryOption.code} value={countryOption.code}>
+                {countryOption.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="cert-country">Pais emisor</Label>
-            <Select
-              id="cert-country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
+            <Label htmlFor="cert-issue-date">Fecha emision</Label>
+            <Input
+              id="cert-issue-date"
+              type="date"
+              value={issueDate}
+              onChange={(event) => {
+                setIssueDate(event.target.value)
+                if (event.target.value) {
+                  setExpiryDate(getDefaultExpiryDate(event.target.value))
+                }
+              }}
               required
-            >
-              <option value="">Selecciona un pais</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="cert-issue-date">Fecha emision</Label>
-              <Input
-                id="cert-issue-date"
-                type="date"
-                value={issueDate}
-                onChange={(e) => {
-                  setIssueDate(e.target.value)
-                  setExpiryDate(getDefaultExpiryDate(e.target.value))
-                }}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="cert-expiry-date">Fecha vencimiento</Label>
-              <Input
-                id="cert-expiry-date"
-                type="date"
-                value={expiryDate}
-                onChange={(e) => setExpiryDate(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <HelpText>{PORTAL_HELP.certificateFormDates}</HelpText>
-
           <div className="flex flex-col gap-2">
-            <Label>Documento (PDF, JPG, PNG)</Label>
-            {file ? (
-              <div
-                className="flex items-center justify-between p-3 text-sm"
-                style={{
-                  backgroundColor: 'var(--g-surface-muted)',
-                  borderRadius: 'var(--g-radius-sm)',
-                }}
-              >
-                <span className="truncate" style={{ color: 'var(--g-text-primary)' }}>
-                  {file.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFile(null)
-                    if (fileRef.current) fileRef.current.value = ''
-                  }}
-                  className="shrink-0 ml-2"
-                  style={{ color: 'var(--g-text-secondary)' }}
-                  aria-label="Eliminar archivo"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
+            <Label htmlFor="cert-expiry-date">Fecha vencimiento</Label>
+            <Input
+              id="cert-expiry-date"
+              type="date"
+              value={expiryDate}
+              onChange={(event) => setExpiryDate(event.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <Label>Documento</Label>
+          {file ? (
+            <div
+              className="flex items-center justify-between gap-2 p-3"
+              style={{
+                border: '1px solid var(--g-border-default)',
+                borderRadius: 'var(--g-radius-sm)',
+                backgroundColor: 'var(--g-surface-muted)',
+              }}
+            >
+              <span className="text-sm truncate" style={{ color: 'var(--g-text-primary)' }}>
+                {file.name}
+              </span>
               <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
-                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed text-sm"
-                style={{
-                  borderColor: 'var(--g-border-default)',
-                  borderRadius: 'var(--g-radius-md)',
-                  color: 'var(--g-text-secondary)',
+                onClick={() => {
+                  setFile(null)
+                  if (fileRef.current) fileRef.current.value = ''
                 }}
+                className="p-1"
+                style={{ color: 'var(--g-text-secondary)' }}
+                aria-label="Quitar archivo"
               >
-                <Upload className="h-4 w-4" />
-                Seleccionar archivo
+                <X className="h-4 w-4" />
               </button>
-            )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) setFile(f)
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="flex items-center gap-2 px-3 py-2 transition-colors"
+              style={{
+                border: '1px dashed var(--g-border-default)',
+                borderRadius: 'var(--g-radius-sm)',
+                color: 'var(--g-text-secondary)',
               }}
-              className="hidden"
-              aria-hidden="true"
-            />
-            <HelpText>{PORTAL_HELP.certificateFormFile}</HelpText>
-          </div>
+              onClick={() => fileRef.current?.click()}
+            >
+              <Plus className="h-4 w-4" />
+              Seleccionar archivo (PDF/JPG/PNG)
+            </button>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          />
+          <HelpText>{PORTAL_HELP.certificateFormFile}</HelpText>
+        </div>
 
-          <DialogFooter className="mt-2 -mx-6 -mb-4">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" loading={submitting}>
-              {submitting ? 'Subiendo...' : 'Subir certificado'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button type="submit" loading={submitting}>
+            Guardar
+          </Button>
+        </DialogFooter>
+      </form>
     </Dialog>
   )
 }
@@ -377,22 +446,22 @@ function StatCard({
   value: number
   variant: 'success' | 'warning' | 'destructive'
 }) {
-  const colors = {
-    success: 'var(--g-brand-3308)',
-    warning: 'var(--status-alert)',
-    destructive: 'var(--status-error)',
-  }
-  const color = colors[variant]
+  const color =
+    variant === 'success'
+      ? 'var(--status-success)'
+      : variant === 'warning'
+        ? 'var(--status-warning)'
+        : 'var(--status-error)'
 
   return (
     <Card>
-      <CardContent className="flex items-center gap-3 py-4">
-        <span className="text-2xl font-bold" style={{ color }}>
+      <CardContent className="py-4">
+        <p className="text-2xl font-bold" style={{ color }}>
           {value}
-        </span>
-        <span className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
+        </p>
+        <p className="text-sm" style={{ color: 'var(--g-text-secondary)' }}>
           {label}
-        </span>
+        </p>
       </CardContent>
     </Card>
   )

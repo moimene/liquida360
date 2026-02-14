@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useGInvBilling } from '../hooks/use-ginv-billing'
 import { useGInvJobs } from '../hooks/use-ginv-jobs'
 import { useAuth } from '@/features/auth'
@@ -8,21 +8,53 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogFooter } from '@/components/ui/dialog'
-import { Loader2, Search, Package, FileStack } from 'lucide-react'
+import { Loader2, Search, Package, FileStack, Download, ArrowUpDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSignedUrl } from '../hooks/use-signed-url'
+import type { GInvIntakeItem } from '@/types'
+import { exportTableToXlsx, xlsxFilename } from '@/lib/xlsx-export'
+
+type BillingSortField =
+  | 'created_at'
+  | 'amount'
+  | 'reference'
+  | 'job_code'
+  | 'client_name'
+  | 'client_country'
+  | 'status'
+  | 'type'
+
+type SortDirection = 'asc' | 'desc'
+
+const BILLING_SORT_OPTIONS: Array<{ value: BillingSortField; label: string }> = [
+  { value: 'created_at', label: 'Fecha de creación' },
+  { value: 'amount', label: 'Importe' },
+  { value: 'reference', label: 'No. Factura / NRC' },
+  { value: 'job_code', label: 'Job' },
+  { value: 'client_name', label: 'Cliente' },
+  { value: 'client_country', label: 'País del cliente' },
+  { value: 'status', label: 'Estado' },
+  { value: 'type', label: 'Tipo' },
+]
+
+function compareValues(a: number | string, b: number | string): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  return String(a).localeCompare(String(b), 'es', { sensitivity: 'base' })
+}
 
 export function BillingPage() {
   const {
     readyItems,
     batches,
     batchItems,
+    batchIntakeById,
     loading,
     fetchReadyToBill,
     fetchBatches,
     fetchBatchItems,
     createBatch,
     setDecision,
+    setAttachFee,
     updateUttaiSubjectObliged,
   } = useGInvBilling()
   const { jobs, fetchJobs } = useGInvJobs()
@@ -31,6 +63,10 @@ export function BillingPage() {
   const [search, setSearch] = useState('')
   const [jobFilter, setJobFilter] = useState<string>('all')
   const [tab, setTab] = useState<'items' | 'batches'>('items')
+  const [primarySort, setPrimarySort] = useState<BillingSortField>('job_code')
+  const [primaryDirection, setPrimaryDirection] = useState<SortDirection>('asc')
+  const [secondarySort, setSecondarySort] = useState<BillingSortField>('amount')
+  const [secondaryDirection, setSecondaryDirection] = useState<SortDirection>('desc')
 
   // Batch creation dialog
   const [batchDialogOpen, setBatchDialogOpen] = useState(false)
@@ -51,6 +87,41 @@ export function BillingPage() {
   // Items that are posted (ready to be grouped into batches)
   const postedItems = useMemo(() => readyItems.filter((i) => i.status === 'posted'), [readyItems])
   const readyToBillItems = useMemo(() => readyItems.filter((i) => i.status === 'ready_to_bill'), [readyItems])
+  const jobsById = useMemo(() => new Map(jobs.map((job) => [job.id, job])), [jobs])
+
+  const getSortValue = useCallback((item: GInvIntakeItem, field: BillingSortField): number | string => {
+    const job = item.job_id ? jobsById.get(item.job_id) : undefined
+    switch (field) {
+      case 'created_at':
+        return new Date(item.created_at).getTime()
+      case 'amount':
+        return item.amount
+      case 'reference':
+        return (item.type === 'official_fee'
+          ? item.nrc_number || item.invoice_number || ''
+          : item.invoice_number || '').toLowerCase()
+      case 'job_code':
+        return (job?.job_code ?? '').toLowerCase()
+      case 'client_name':
+        return (job?.client_name ?? '').toLowerCase()
+      case 'client_country':
+        return (job?.client_country ?? '').toLowerCase()
+      case 'status':
+        return item.status
+      case 'type':
+        return INTAKE_TYPE_LABELS[item.type] ?? item.type
+    }
+  }, [jobsById])
+
+  const compareByField = useCallback((
+    left: GInvIntakeItem,
+    right: GInvIntakeItem,
+    field: BillingSortField,
+    direction: SortDirection,
+  ): number => {
+    const base = compareValues(getSortValue(left, field), getSortValue(right, field))
+    return direction === 'asc' ? base : base * -1
+  }, [getSortValue])
 
   const filteredItems = useMemo(() => {
     let result = postedItems
@@ -62,16 +133,42 @@ export function BillingPage() {
       result = result.filter(
         (i) =>
           (i.invoice_number ?? '').toLowerCase().includes(q) ||
-          (i.concept_text ?? '').toLowerCase().includes(q),
+          (i.nrc_number ?? '').toLowerCase().includes(q) ||
+          (i.official_organism ?? '').toLowerCase().includes(q) ||
+          (i.concept_text ?? '').toLowerCase().includes(q) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.job_code ?? '').toLowerCase().includes(q) : false) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.client_name ?? '').toLowerCase().includes(q) : false) ||
+          (i.job_id ? (jobsById.get(i.job_id)?.client_country ?? '').toLowerCase().includes(q) : false),
       )
     }
-    return result
-  }, [postedItems, jobFilter, search])
+    return [...result].sort((left, right) => {
+      const primary = compareByField(left, right, primarySort, primaryDirection)
+      if (primary !== 0) return primary
+      const secondary = compareByField(left, right, secondarySort, secondaryDirection)
+      if (secondary !== 0) return secondary
+      return new Date(right.created_at).getTime() - new Date(left.created_at).getTime()
+    })
+  }, [
+    postedItems,
+    jobFilter,
+    search,
+    jobsById,
+    primarySort,
+    primaryDirection,
+    secondarySort,
+    secondaryDirection,
+    compareByField,
+  ])
 
   const jobOptions = useMemo(() => {
     const jobIds = new Set(postedItems.map((i) => i.job_id).filter(Boolean))
     return jobs.filter((j) => jobIds.has(j.id))
   }, [postedItems, jobs])
+
+  const allFilteredSelected = useMemo(
+    () => filteredItems.length > 0 && filteredItems.every((item) => selectedItems.has(item.id)),
+    [filteredItems, selectedItems],
+  )
 
   function toggleItemSelection(id: string) {
     setSelectedItems((prev) => {
@@ -126,6 +223,15 @@ export function BillingPage() {
     toast.success('Decisión registrada')
   }
 
+  async function handleAttachFee(batchItemId: string, attachFee: boolean) {
+    const { error } = await setAttachFee(batchItemId, attachFee)
+    if (error) {
+      toast.error(error)
+      return
+    }
+    toast.success(attachFee ? 'Justificante marcado para anexado SAP' : 'Justificante excluido de SAP')
+  }
+
   async function handleUttaiToggle(batchId: string, current: boolean | null) {
     const newValue = current === true ? false : true
     const { error } = await updateUttaiSubjectObliged(batchId, newValue)
@@ -135,6 +241,43 @@ export function BillingPage() {
   function openBatchDetail(batchId: string) {
     setDetailBatchId(batchId)
     fetchBatchItems(batchId)
+  }
+
+  async function handleExportXlsx() {
+    if (filteredItems.length === 0) {
+      toast.error('No hay cargos para exportar')
+      return
+    }
+
+    try {
+      await exportTableToXlsx(
+        filteredItems,
+        [
+          { header: 'Tipo', accessor: (item) => INTAKE_TYPE_LABELS[item.type] ?? item.type },
+          { header: 'No. Factura / NRC', accessor: (item) => item.type === 'official_fee' ? item.nrc_number || item.invoice_number || '' : item.invoice_number || '' },
+          { header: 'Job', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.job_code ?? '' : '') },
+          { header: 'Cliente', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.client_name ?? '' : '') },
+          { header: 'País cliente', accessor: (item) => (item.job_id ? jobsById.get(item.job_id)?.client_country ?? '' : '') },
+          { header: 'Importe', accessor: (item) => item.amount },
+          { header: 'Tipo cambio EUR', accessor: (item) => item.exchange_rate_to_eur ?? '' },
+          { header: 'Importe EUR', accessor: (item) => item.amount_eur ?? '' },
+          { header: 'Moneda', accessor: 'currency' },
+          { header: 'Concepto', accessor: 'concept_text' },
+          { header: 'Organismo', accessor: 'official_organism' },
+          {
+            header: 'Tarifa',
+            accessor: (item) => item.tariff_type === 'special' ? 'Especial' : item.tariff_type === 'general' ? 'General' : '',
+          },
+          { header: 'Estado', accessor: (item) => INTAKE_STATUS_CONFIG[item.status]?.label ?? item.status },
+          { header: 'Creado', accessor: (item) => new Date(item.created_at).toLocaleString('es-ES') },
+        ],
+        xlsxFilename('para_facturar'),
+        'ParaFacturar',
+      )
+      toast.success('Excel exportado')
+    } catch {
+      toast.error('No se pudo exportar el Excel')
+    }
   }
 
   return (
@@ -151,11 +294,19 @@ export function BillingPage() {
             Cargos contabilizados disponibles para emisión de factura
           </p>
         </div>
-        {tab === 'items' && selectedItems.size > 0 && (
-          <Button onClick={openBatchDialog}>
-            <Package className="h-4 w-4 mr-2" />
-            Crear lote ({selectedItems.size})
-          </Button>
+        {tab === 'items' && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleExportXlsx} disabled={filteredItems.length === 0}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Excel
+            </Button>
+            {selectedItems.size > 0 && (
+              <Button onClick={openBatchDialog}>
+                <Package className="h-4 w-4 mr-2" />
+                Crear lote ({selectedItems.size})
+              </Button>
+            )}
+          </div>
         )}
       </div>
 
@@ -233,7 +384,7 @@ export function BillingPage() {
             <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--g-text-tertiary)' }} />
               <Input
-                placeholder="Buscar por nº factura o concepto..."
+                placeholder="Buscar por factura, NRC, organismo, concepto o cliente..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -248,6 +399,48 @@ export function BillingPage() {
               {jobOptions.map((j) => (
                 <option key={j.id} value={j.id}>{j.job_code} — {j.client_name}</option>
               ))}
+            </Select>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4" style={{ color: 'var(--g-text-tertiary)' }} />
+              <span className="text-xs" style={{ color: 'var(--g-text-secondary)' }}>Orden</span>
+            </div>
+            <Select
+              value={primarySort}
+              onChange={(e) => setPrimarySort(e.target.value as BillingSortField)}
+              className="w-[220px]"
+            >
+              {BILLING_SORT_OPTIONS.map((option) => (
+                <option key={`primary-${option.value}`} value={option.value}>
+                  1o criterio: {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={primaryDirection}
+              onChange={(e) => setPrimaryDirection(e.target.value as SortDirection)}
+              className="w-[180px]"
+            >
+              <option value="asc">1o ascendente</option>
+              <option value="desc">1o descendente</option>
+            </Select>
+            <Select
+              value={secondarySort}
+              onChange={(e) => setSecondarySort(e.target.value as BillingSortField)}
+              className="w-[220px]"
+            >
+              {BILLING_SORT_OPTIONS.map((option) => (
+                <option key={`secondary-${option.value}`} value={option.value}>
+                  2o criterio: {option.label}
+                </option>
+              ))}
+            </Select>
+            <Select
+              value={secondaryDirection}
+              onChange={(e) => setSecondaryDirection(e.target.value as SortDirection)}
+              className="w-[180px]"
+            >
+              <option value="asc">2o ascendente</option>
+              <option value="desc">2o descendente</option>
             </Select>
           </div>
 
@@ -278,27 +471,34 @@ export function BillingPage() {
                             setSelectedItems(new Set())
                           }
                         }}
-                        checked={filteredItems.length > 0 && selectedItems.size === filteredItems.length}
+                        checked={allFilteredSelected}
                       />
                     </th>
                     <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Tipo</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Nº Factura</th>
-                <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Documento</th>
-                <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.length === 0 ? (
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>No. Factura / NRC</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Job</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Cliente</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>País</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>TC EUR</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Importe EUR</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Concepto</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Organismo / Tarifa</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Documento</th>
+                    <th className="text-left px-4 py-3 font-medium" style={{ color: 'var(--g-text-secondary)' }}>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
+                      <td colSpan={13} className="text-center py-8" style={{ color: 'var(--g-text-tertiary)' }}>
                         No hay cargos contabilizados disponibles
                       </td>
                     </tr>
                   ) : (
                     filteredItems.map((item) => {
                       const sc = INTAKE_STATUS_CONFIG[item.status] ?? INTAKE_STATUS_CONFIG.draft
+                      const job = item.job_id ? jobsById.get(item.job_id) : undefined
                       return (
                         <tr key={item.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                           <td className="px-4 py-3">
@@ -312,13 +512,39 @@ export function BillingPage() {
                             {INTAKE_TYPE_LABELS[item.type] ?? item.type}
                           </td>
                           <td className="px-4 py-3 font-medium" style={{ color: 'var(--g-text-primary)' }}>
-                            {item.invoice_number || '—'}
+                            {item.type === 'official_fee'
+                              ? item.nrc_number || item.invoice_number || '—'
+                              : item.invoice_number || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                            {job?.job_code ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 max-w-[220px] truncate" style={{ color: 'var(--g-text-secondary)' }}>
+                            {job?.client_name ?? '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                            {job?.client_country ?? '—'}
                           </td>
                           <td className="px-4 py-3 text-right font-medium" style={{ color: 'var(--g-text-primary)' }}>
                             {new Intl.NumberFormat('es-ES', { style: 'currency', currency: item.currency }).format(item.amount)}
                           </td>
+                          <td className="px-4 py-3 text-right text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                            {item.exchange_rate_to_eur
+                              ? new Intl.NumberFormat('es-ES', { minimumFractionDigits: 4, maximumFractionDigits: 6 }).format(item.exchange_rate_to_eur)
+                              : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs font-medium" style={{ color: 'var(--g-text-primary)' }}>
+                            {typeof item.amount_eur === 'number'
+                              ? new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(item.amount_eur)
+                              : '—'}
+                          </td>
                           <td className="px-4 py-3 max-w-[200px] truncate" style={{ color: 'var(--g-text-secondary)' }}>
                             {item.concept_text || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                            {item.type === 'official_fee'
+                              ? `${item.official_organism ?? '—'} / ${item.tariff_type === 'special' ? 'Especial' : item.tariff_type === 'general' ? 'General' : '—'}`
+                              : '—'}
                           </td>
                           <td className="px-4 py-3">
                             {item.file_path ? (
@@ -487,81 +713,122 @@ export function BillingPage() {
         open={!!detailBatchId}
         onClose={() => setDetailBatchId(null)}
         title="Cargos del lote"
-        description="Decisiones por cargo: emitir, transferir o descartar"
+        description="Decisiones por cargo y anexado automatico de justificante de tasa"
       >
         <div className="max-h-[50vh] overflow-y-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--g-border-default)' }}>
                 <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--g-text-secondary)' }}>Item</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--g-text-secondary)' }}>Referencia</th>
+                <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--g-text-secondary)' }}>Justificante tasa</th>
                 <th className="text-left px-3 py-2 text-xs font-medium" style={{ color: 'var(--g-text-secondary)' }}>Decisión</th>
                 <th className="text-right px-3 py-2 text-xs font-medium" style={{ color: 'var(--g-text-secondary)' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {batchItems.map((bi) => (
-                <tr key={bi.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
-                  <td className="px-3 py-2 font-mono text-xs" style={{ color: 'var(--g-text-primary)' }}>
-                    {bi.intake_item_id.slice(0, 8)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {bi.decision ? (
-                      <span
-                        className="inline-flex px-2 py-0.5 text-xs font-medium"
-                        style={{
-                          color: bi.decision === 'emit' ? 'var(--status-success)' : bi.decision === 'transfer' ? 'var(--status-info)' : 'var(--status-error)',
-                          backgroundColor: bi.decision === 'emit' ? 'var(--status-success-bg)' : bi.decision === 'transfer' ? 'var(--status-info-bg)' : 'var(--status-error-bg)',
-                          borderRadius: 'var(--g-radius-full)',
-                        }}
-                      >
-                        {bi.decision === 'emit' ? 'Emitir' : bi.decision === 'transfer' ? 'Transferir' : 'Descartar'}
-                      </span>
-                    ) : (
-                      <span className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>Pendiente</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        className="px-2 py-0.5 text-xs font-medium transition-colors"
-                        style={{
-                          color: bi.decision === 'emit' ? 'white' : 'var(--status-success)',
-                          backgroundColor: bi.decision === 'emit' ? 'var(--status-success)' : 'transparent',
-                          borderRadius: 'var(--g-radius-sm)',
-                          border: '1px solid var(--status-success)',
-                        }}
-                        onClick={() => handleDecision(bi.id, 'emit')}
-                      >
-                        Emitir
-                      </button>
-                      <button
-                        className="px-2 py-0.5 text-xs font-medium transition-colors"
-                        style={{
-                          color: bi.decision === 'transfer' ? 'white' : 'var(--status-info)',
-                          backgroundColor: bi.decision === 'transfer' ? 'var(--status-info)' : 'transparent',
-                          borderRadius: 'var(--g-radius-sm)',
-                          border: '1px solid var(--status-info)',
-                        }}
-                        onClick={() => handleDecision(bi.id, 'transfer')}
-                      >
-                        Transferir
-                      </button>
-                      <button
-                        className="px-2 py-0.5 text-xs font-medium transition-colors"
-                        style={{
-                          color: bi.decision === 'discard' ? 'white' : 'var(--status-error)',
-                          backgroundColor: bi.decision === 'discard' ? 'var(--status-error)' : 'transparent',
-                          borderRadius: 'var(--g-radius-sm)',
-                          border: '1px solid var(--status-error)',
-                        }}
-                        onClick={() => handleDecision(bi.id, 'discard')}
-                      >
-                        Descartar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {batchItems.map((bi) => {
+                const intake = batchIntakeById[bi.intake_item_id]
+                const canAttachProof = intake?.type === 'official_fee'
+                const hasProof = Boolean(intake?.file_path)
+                const reference = intake?.nrc_number || intake?.invoice_number || bi.intake_item_id.slice(0, 8)
+
+                return (
+                  <tr key={bi.id} style={{ borderBottom: '1px solid var(--g-border-default)' }}>
+                    <td className="px-3 py-2 font-mono text-xs" style={{ color: 'var(--g-text-primary)' }}>
+                      {bi.intake_item_id.slice(0, 8)}
+                    </td>
+                    <td className="px-3 py-2 text-xs" style={{ color: 'var(--g-text-secondary)' }}>
+                      {reference}
+                    </td>
+                    <td className="px-3 py-2">
+                      {!canAttachProof && (
+                        <span className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>No aplica</span>
+                      )}
+                      {canAttachProof && (
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            className="px-2 py-0.5 text-xs font-medium transition-colors"
+                            style={{
+                              color: bi.attach_fee ? 'white' : 'var(--status-info)',
+                              backgroundColor: bi.attach_fee ? 'var(--status-info)' : 'transparent',
+                              borderRadius: 'var(--g-radius-sm)',
+                              border: '1px solid var(--status-info)',
+                              opacity: hasProof ? 1 : 0.5,
+                              cursor: hasProof ? 'pointer' : 'not-allowed',
+                            }}
+                            disabled={!hasProof}
+                            onClick={() => handleAttachFee(bi.id, !bi.attach_fee)}
+                          >
+                            {bi.attach_fee ? 'Adjuntar' : 'No adjuntar'}
+                          </button>
+                          {!hasProof && (
+                            <span className="text-xs" style={{ color: 'var(--status-warning)' }}>
+                              Sin justificante
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      {bi.decision ? (
+                        <span
+                          className="inline-flex px-2 py-0.5 text-xs font-medium"
+                          style={{
+                            color: bi.decision === 'emit' ? 'var(--status-success)' : bi.decision === 'transfer' ? 'var(--status-info)' : 'var(--status-error)',
+                            backgroundColor: bi.decision === 'emit' ? 'var(--status-success-bg)' : bi.decision === 'transfer' ? 'var(--status-info-bg)' : 'var(--status-error-bg)',
+                            borderRadius: 'var(--g-radius-full)',
+                          }}
+                        >
+                          {bi.decision === 'emit' ? 'Emitir' : bi.decision === 'transfer' ? 'Transferir' : 'Descartar'}
+                        </span>
+                      ) : (
+                        <span className="text-xs" style={{ color: 'var(--g-text-tertiary)' }}>Pendiente</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          className="px-2 py-0.5 text-xs font-medium transition-colors"
+                          style={{
+                            color: bi.decision === 'emit' ? 'white' : 'var(--status-success)',
+                            backgroundColor: bi.decision === 'emit' ? 'var(--status-success)' : 'transparent',
+                            borderRadius: 'var(--g-radius-sm)',
+                            border: '1px solid var(--status-success)',
+                          }}
+                          onClick={() => handleDecision(bi.id, 'emit')}
+                        >
+                          Emitir
+                        </button>
+                        <button
+                          className="px-2 py-0.5 text-xs font-medium transition-colors"
+                          style={{
+                            color: bi.decision === 'transfer' ? 'white' : 'var(--status-info)',
+                            backgroundColor: bi.decision === 'transfer' ? 'var(--status-info)' : 'transparent',
+                            borderRadius: 'var(--g-radius-sm)',
+                            border: '1px solid var(--status-info)',
+                          }}
+                          onClick={() => handleDecision(bi.id, 'transfer')}
+                        >
+                          Transferir
+                        </button>
+                        <button
+                          className="px-2 py-0.5 text-xs font-medium transition-colors"
+                          style={{
+                            color: bi.decision === 'discard' ? 'white' : 'var(--status-error)',
+                            backgroundColor: bi.decision === 'discard' ? 'var(--status-error)' : 'transparent',
+                            borderRadius: 'var(--g-radius-sm)',
+                            border: '1px solid var(--status-error)',
+                          }}
+                          onClick={() => handleDecision(bi.id, 'discard')}
+                        >
+                          Descartar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

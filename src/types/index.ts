@@ -32,6 +32,7 @@ export type GInvSapPosting = Database['public']['Tables']['ginv_sap_postings']['
 export type GInvBillingBatch = Database['public']['Tables']['ginv_billing_batches']['Row']
 export type GInvBillingBatchItem = Database['public']['Tables']['ginv_billing_batch_items']['Row']
 export type GInvClientInvoice = Database['public']['Tables']['ginv_client_invoices']['Row']
+export type GInvCollectionClaim = Database['public']['Tables']['ginv_collection_claims']['Row']
 export type GInvDelivery = Database['public']['Tables']['ginv_deliveries']['Row']
 export type GInvPlatformTask = Database['public']['Tables']['ginv_platform_tasks']['Row']
 export type GInvUttaiRequest = Database['public']['Tables']['ginv_uttai_requests']['Row']

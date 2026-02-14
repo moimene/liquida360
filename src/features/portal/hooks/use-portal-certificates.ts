@@ -11,6 +11,7 @@ interface PortalCertificatesState {
   fetchCertificates: (correspondentId: string) => Promise<void>
   uploadCertificate: (
     correspondentId: string,
+    certificateType: 'residence' | 'withholding' | 'bank_account',
     issuingCountry: string,
     issueDate: string,
     expiryDate: string,
@@ -38,7 +39,14 @@ export const usePortalCertificates = create<PortalCertificatesState>((set, get) 
     }
   },
 
-  uploadCertificate: async (correspondentId, issuingCountry, issueDate, expiryDate, file) => {
+  uploadCertificate: async (
+    correspondentId,
+    certificateType,
+    issuingCountry,
+    issueDate,
+    expiryDate,
+    file,
+  ) => {
     let documentUrl: string | null = null
 
     if (file) {
@@ -63,6 +71,7 @@ export const usePortalCertificates = create<PortalCertificatesState>((set, get) 
       .from('certificates')
       .insert({
         correspondent_id: correspondentId,
+        certificate_type: certificateType,
         issuing_country: issuingCountry,
         issue_date: issueDate,
         expiry_date: expiryDate,

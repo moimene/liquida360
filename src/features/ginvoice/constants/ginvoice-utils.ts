@@ -5,12 +5,12 @@ export const INTAKE_STATUS_CONFIG: Record<
   { label: string; color: string; bg: string }
 > = {
   draft: { label: 'Borrador', color: 'var(--g-text-secondary)', bg: 'var(--g-surface-hover)' },
-  submitted: { label: 'Enviado', color: 'var(--status-info)', bg: 'var(--status-info-bg)' },
+  submitted: { label: 'Subida', color: 'var(--status-info)', bg: 'var(--status-info-bg)' },
   needs_info: { label: 'Faltan datos', color: 'var(--status-warning)', bg: 'var(--status-warning-bg)' },
   pending_approval: { label: 'Pte. aprobación', color: 'var(--status-warning)', bg: 'var(--status-warning-bg)' },
   approved: { label: 'Aprobado', color: 'var(--status-success)', bg: 'var(--status-success-bg)' },
   rejected: { label: 'Rechazado', color: 'var(--status-error)', bg: 'var(--status-error-bg)' },
-  sent_to_accounting: { label: 'En contabilización', color: 'var(--status-info)', bg: 'var(--status-info-bg)' },
+  sent_to_accounting: { label: 'Aprobada', color: 'var(--status-info)', bg: 'var(--status-info-bg)' },
   posted: { label: 'Contabilizado', color: 'var(--status-success)', bg: 'var(--status-success-bg)' },
   ready_to_bill: { label: 'Para facturar', color: 'var(--g-brand-3308)', bg: 'var(--g-sec-50)' },
   billed: { label: 'Facturado', color: 'var(--status-success)', bg: 'var(--status-success-bg)' },

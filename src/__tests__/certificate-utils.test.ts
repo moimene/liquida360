@@ -32,19 +32,18 @@ describe('certificate-utils', () => {
       expect(result.daysRemaining).toBeLessThanOrEqual(30)
     })
 
-    it('returns expiring_soon (warning) for dates within 90 days but > 30 days', () => {
-      const result = getCertificateStatus('2026-08-20')
+    it('returns expiring_soon (destructive) for dates within 120 days', () => {
+      const result = getCertificateStatus('2026-09-20')
       expect(result.status).toBe('expiring_soon')
-      expect(result.badgeVariant).toBe('warning')
-      expect(result.daysRemaining).toBeLessThanOrEqual(90)
-      expect(result.daysRemaining).toBeGreaterThan(30)
+      expect(result.badgeVariant).toBe('destructive')
+      expect(result.daysRemaining).toBeLessThanOrEqual(120)
     })
 
-    it('returns valid for dates > 90 days out', () => {
+    it('returns valid for dates > 120 days out', () => {
       const result = getCertificateStatus('2027-06-15')
       expect(result.status).toBe('valid')
       expect(result.badgeVariant).toBe('success')
-      expect(result.daysRemaining).toBeGreaterThan(90)
+      expect(result.daysRemaining).toBeGreaterThan(120)
     })
 
     it('label contains days remaining for valid cert', () => {
@@ -110,9 +109,12 @@ describe('certificate-utils', () => {
         correspondent_id: 'c1',
         issuing_country: 'ES',
         issue_date: '2025-01-01',
-        expiry_date: '2026-07-01', // within 90 days
+        expiry_date: '2026-07-01', // within 120 days
+        certificate_type: 'residence',
         document_url: null,
         status: 'valid',
+        apostilled: false,
+        apostille_requirement: null,
         created_at: '2025-01-01T00:00:00Z',
         updated_at: '2025-01-01T00:00:00Z',
       },
@@ -122,8 +124,11 @@ describe('certificate-utils', () => {
         issuing_country: 'FR',
         issue_date: '2025-01-01',
         expiry_date: '2027-12-01', // far future
+        certificate_type: 'residence',
         document_url: null,
         status: 'valid',
+        apostilled: false,
+        apostille_requirement: null,
         created_at: '2025-01-01T00:00:00Z',
         updated_at: '2025-01-01T00:00:00Z',
       },

@@ -31,8 +31,8 @@ const STATUS_OPTIONS = [
   { value: 'all', label: 'Todos los estados' },
   { value: 'draft', label: 'Borrador' },
   { value: 'pending_approval', label: 'Pendiente aprobación' },
-  { value: 'approved', label: 'Aprobada' },
-  { value: 'payment_requested', label: 'Pago solicitado' },
+  { value: 'approved', label: 'Aceptada' },
+  { value: 'payment_requested', label: 'Fecha de pago' },
   { value: 'paid', label: 'Pagada' },
   { value: 'rejected', label: 'Rechazada' },
 ]

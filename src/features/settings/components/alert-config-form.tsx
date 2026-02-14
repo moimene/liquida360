@@ -114,7 +114,7 @@ export function AlertConfigForm({
             id="days_before_expiry"
             type="number"
             {...register('days_before_expiry', { valueAsNumber: true })}
-            placeholder="90"
+            placeholder="120"
             error={!!errors.days_before_expiry}
             aria-describedby={errors.days_before_expiry ? 'days-error' : undefined}
           />

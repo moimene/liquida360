@@ -53,7 +53,7 @@ El proceso actual de pago a corresponsales presenta los siguientes problemas:
 - Campos: país emisor, fecha emisión, fecha vencimiento, documento adjunto
 - **Vigencia configurable** (por defecto 1 año, ajustable por país)
 - **Sistema de preavisos**:
-  - Alerta a 90 días del vencimiento (configurable)
+  - Alerta a 120 días del vencimiento (configurable)
   - Alerta a 30 días del vencimiento (configurable)
   - Alerta de certificado vencido (bloquea nuevas liquidaciones)
 - Panel de certificados próximos a vencer

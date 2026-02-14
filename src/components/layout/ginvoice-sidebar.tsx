@@ -10,6 +10,7 @@ import {
   FileStack,
   FileOutput,
   Send,
+  CircleDollarSign,
   MonitorSmartphone,
   Settings,
   Shield,
@@ -30,7 +31,7 @@ interface NavItem {
 
 const mainNav: NavItem[] = [
   { label: 'Dashboard', path: '/g-invoice', icon: LayoutDashboard },
-  { label: 'Ingesta', path: '/g-invoice/intake', icon: Upload },
+  { label: 'Subidas', path: '/g-invoice/intake', icon: Upload },
   { label: 'UTTAI', path: '/g-invoice/uttai', icon: ShieldCheck },
   {
     label: 'Contabilización',
@@ -55,6 +56,12 @@ const mainNav: NavItem[] = [
     path: '/g-invoice/delivery',
     icon: Send,
     roles: ['ginv_bpo_facturacion', 'ginv_admin'],
+  },
+  {
+    label: 'CxC / Recobro',
+    path: '/g-invoice/collections',
+    icon: CircleDollarSign,
+    roles: ['ginv_bpo_facturacion', 'ginv_socio_aprobador', 'ginv_admin'],
   },
   {
     label: 'Plataformas',

@@ -12,6 +12,7 @@ const ginvRoutes = [
   { name: 'Invoices', path: '/g-invoice/invoices' },
   { name: 'Delivery', path: '/g-invoice/delivery' },
   { name: 'Platforms', path: '/g-invoice/platforms' },
+  { name: 'Settings', path: '/g-invoice/settings' },
 ]
 
 test.describe('G-Invoice Accessibility (WCAG AA)', () => {

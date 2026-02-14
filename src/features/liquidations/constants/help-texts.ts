@@ -1,6 +1,6 @@
 export const LIQUIDATIONS_HELP = {
   pageInfoPanel:
-    'El flujo de una liquidación: Borrador → Pendiente de aprobación → Aprobada → Pago solicitado → Pagada. Cada paso requiere acción de un rol diferente.',
+    'El flujo de una liquidación: Borrador → Pendiente de aprobación → Aceptada → Fecha de pago → Pagada. Cada paso requiere acción de un rol diferente.',
   wizardStep1:
     'Solo se muestran corresponsales activos. El sistema verificará si tiene certificado vigente.',
   wizardStep2Concept:
@@ -11,7 +11,7 @@ export const LIQUIDATIONS_HELP = {
   wizardStep3:
     'Se creará como borrador. Podrás enviarla a aprobación desde el detalle.',
   timelineHeader:
-    '5 etapas: Borrador, Pendiente de aprobación, Aprobada, Pago solicitado, Pagada. Si es rechazada, deberás crear una nueva.',
+    '5 etapas: Borrador, Pendiente de aprobación, Aceptada, Fecha de pago, Pagada. Si es rechazada, deberás crear una nueva.',
   actionSubmit:
     'Envía la liquidación para que un supervisor la revise y apruebe.',
   actionApprove:

@@ -16,10 +16,10 @@ export function GInvoiceDashboardPage() {
 
   const cards = metrics
     ? [
-        { label: 'Ingesta pendientes', value: metrics.intakeSubmitted + metrics.intakePendingApproval, color: 'var(--status-warning)' },
+        { label: 'Subidas pendientes', value: metrics.intakeSubmitted + metrics.intakePendingApproval, color: 'var(--status-warning)' },
         { label: 'UTTAI bloqueados', value: metrics.intakeUttaiBlocked, color: 'var(--status-error)' },
         { label: 'Compliance rojo', value: metrics.intakeComplianceIssues, color: 'var(--status-error)' },
-        { label: 'En contab.', value: metrics.accountingInQueue, color: 'var(--status-info)' },
+        { label: 'Aprobadas', value: metrics.accountingInQueue, color: 'var(--status-info)' },
         { label: 'Listos para facturar', value: metrics.readyToBill, color: 'var(--g-brand-3308)' },
         { label: 'Facturas listas SAP', value: metrics.invoicesReady, color: 'var(--status-info)' },
         { label: 'Emitidas hoy', value: metrics.invoicesIssuedToday, color: 'var(--status-success)' },

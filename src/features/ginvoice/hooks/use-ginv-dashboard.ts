@@ -165,7 +165,7 @@ export function useGInvDashboard() {
         .forEach((i) => {
           queue.push({
             id: i.id,
-            type: 'Ingesta',
+            type: 'Subida',
             status: i.status,
             label: i.invoice_number || i.type,
             created_at: i.created_at,
