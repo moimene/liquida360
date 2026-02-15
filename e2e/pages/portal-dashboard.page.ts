@@ -15,11 +15,13 @@ export class PortalDashboardPage {
   constructor(page: Page) {
     this.page = page
     this.welcomeHeading = page.getByRole('heading', { level: 1 }).filter({ hasText: /Bienvenido/ })
-    this.kpiBorradores = page.getByText('Borradores')
-    this.kpiEnProceso = page.getByText('En proceso')
+    this.kpiBorradores = page.getByText('Subidas')
+    this.kpiEnProceso = page.getByText('Aceptadas / pendientes')
     this.kpiPagadas = page.getByText('Pagadas')
     this.kpiCertificados = page.getByText('Certificados vigentes')
-    this.kpiCards = page.locator('.grid > div').filter({ has: page.getByText(/Borradores|En proceso|Pagadas|Certificados vigentes/) })
+    this.kpiCards = page
+      .locator('.grid > div')
+      .filter({ has: page.getByText(/Subidas|Aceptadas \/ pendientes|Pagadas|Certificados vigentes/) })
     this.certificateAlert = page.getByText(/vencido|proximo/i).first()
     this.recentInvoices = page.getByText('Facturas recientes')
     this.viewAllButton = page.getByRole('button', { name: /Ver todas/i })

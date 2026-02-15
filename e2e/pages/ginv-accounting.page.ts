@@ -21,8 +21,8 @@ export class GInvAccountingPage {
   constructor(page: Page) {
     this.page = page
     this.heading = page.getByRole('heading', { name: 'Contabilización' })
-    this.exportCsvButton = page.getByRole('button', { name: /Exportar CSV/ })
-    this.searchInput = page.getByPlaceholder('Buscar por nº factura o concepto...')
+    this.exportCsvButton = page.getByRole('button', { name: /Exportar (CSV|Excel)/ })
+    this.searchInput = page.getByPlaceholder('Buscar por factura, NRC, organismo, concepto o cliente...')
     this.tableRows = page.locator('tbody tr')
     this.sendToAccountingButton = page.getByRole('button', { name: /Enviar a contab/ })
     this.registerSapButton = page.getByRole('button', { name: /Registrar SAP/ })
