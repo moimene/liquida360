@@ -36,9 +36,9 @@ export class GInvIntakePage {
 
   constructor(page: Page) {
     this.page = page
-    this.heading = page.getByRole('heading', { name: 'Ingesta Digital' })
-    this.createButton = page.getByRole('button', { name: /Nueva Ingesta/ })
-    this.searchInput = page.getByPlaceholder('Buscar por nº factura o concepto...')
+    this.heading = page.getByRole('heading', { name: /(Ingesta Digital|Subidas)/ })
+    this.createButton = page.getByRole('button', { name: /Nueva (Ingesta|Subida)/ })
+    this.searchInput = page.getByPlaceholder('Buscar por factura, NRC, concepto o cliente...')
     this.statusFilter = page.locator('select').nth(0)
     this.typeFilter = page.locator('select').nth(1)
     this.tableRows = page.locator('tbody tr')
@@ -47,12 +47,12 @@ export class GInvIntakePage {
     this.intakeVendor = page.locator('#intake-vendor')
     this.intakeAmount = page.locator('#intake-amount')
     this.intakeCurrency = page.locator('#intake-currency')
-    this.intakeInvoiceNumber = page.locator('#intake-invoice-number')
+    this.intakeInvoiceNumber = page.locator('#intake-reference-number')
     this.intakeInvoiceDate = page.locator('#intake-invoice-date')
     this.intakeConcept = page.locator('#intake-concept')
     this.cancelButton = page.getByRole('button', { name: /Cancelar/ })
     this.submitButton = page.getByRole('button', { name: /Registrar/ })
-    this.emptyState = page.getByText('No hay items de ingesta')
+    this.emptyState = page.getByText('No hay subidas registradas')
     this.noResultsState = page.getByText('Sin resultados para estos filtros')
     // Aliases
     this.kpiCards = page.locator('.grid > div').filter({ has: page.locator('.text-2xl, .text-3xl') })

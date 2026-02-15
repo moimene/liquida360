@@ -186,6 +186,11 @@ const GInvSettingsPage = lazy(() =>
     default: m.GInvoiceSettingsPage,
   })),
 )
+const GInvSecurityManifestPage = lazy(() =>
+  import('@/features/ginvoice/components/ginv-security-manifest-page').then((m) => ({
+    default: m.GInvSecurityManifestPage,
+  })),
+)
 
 function App() {
   const initialize = useAuth((s) => s.initialize)
@@ -205,6 +210,7 @@ function App() {
             <Route path="/pending" element={<PendingApprovalPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/security" element={<SecurityManifestPage />} />
+            <Route path="/security/g-invoice" element={<GInvSecurityManifestPage />} />
 
             {/* Portal routes (corresponsal only) */}
             <Route
@@ -253,6 +259,7 @@ function App() {
                   </GInvoiceRoute>
                 }
               />
+              <Route path="security" element={<GInvSecurityManifestPage />} />
             </Route>
 
             {/* Internal routes (pagador, supervisor, financiero, admin) */}

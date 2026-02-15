@@ -22,8 +22,14 @@ Plataforma de gestion de liquidaciones de pagos para despachos de abogados. Gest
 | **Fechas** | date-fns |
 | **Iconos** | Lucide React |
 | **Tests unitarios** | Vitest + Testing Library |
-| **Tests E2E** | Playwright (26 specs, 146 tests) |
+| **Tests E2E** | Playwright (39 specs, 273 tests) |
 | **Lint/Format** | ESLint 9 + Prettier |
+
+## Testing
+- Unit/IT: `npm test` (Vitest, jsdom). Última ejecución 2026-02-15 → 17/17 archivos, 158/158 tests OK.
+- Cobertura: `npm run test:coverage` (v8, reportes en `coverage/`). Añadido `.gitignore` para excluir artefactos.
+- E2E G-Invoice + Portal: `npm run test:e2e` (Playwright). Última ejecución 2026-02-15 → 256 passed / 17 skipped (~8.2m) con seeds v1.0+v2.0.
+- Smoke E2E (rápido): ver `docs/playwright-smoke-test-plan.md`.
 
 ---
 

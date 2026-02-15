@@ -200,7 +200,7 @@ export function GInvoiceSidebar({ collapsed, onToggle }: GInvoiceSidebarProps) {
       >
         <div className="mb-2">
           <GInvoiceSidebarItem
-            item={{ label: 'Seguridad', path: '/security', icon: Shield }}
+            item={{ label: 'Seguridad', path: '/g-invoice/security', icon: Shield }}
             collapsed={collapsed}
           />
         </div>

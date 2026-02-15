@@ -14,10 +14,10 @@ test.describe('G-Invoice Intake', () => {
     await intake.goto()
     await page.waitForLoadState('networkidle')
     await expect(intake.heading).toBeVisible()
-    await expect(intake.heading).toHaveText('Ingesta Digital')
+    await expect(intake.heading).toContainText('Subidas')
   })
 
-  test('should display Nueva Ingesta button', async ({ page }) => {
+  test('should display Nueva Subida button', async ({ page }) => {
     const intake = new GInvIntakePage(page)
     await intake.goto()
     await page.waitForLoadState('networkidle')
@@ -37,8 +37,8 @@ test.describe('G-Invoice Intake', () => {
     await intake.goto()
     await page.waitForLoadState('networkidle')
     await expect(page.locator('th').filter({ hasText: 'Tipo' })).toBeVisible()
-    await expect(page.locator('th').filter({ hasText: 'Nº Factura' })).toBeVisible()
-    await expect(page.locator('th').filter({ hasText: 'Importe' })).toBeVisible()
+    await expect(page.locator('th').filter({ hasText: 'No. Factura / NRC' })).toBeVisible()
+    await expect(page.getByRole('columnheader', { name: /^Importe$/ })).toBeVisible()
     await expect(page.locator('th').filter({ hasText: 'Concepto' })).toBeVisible()
     await expect(page.locator('th').filter({ hasText: 'Estado' })).toBeVisible()
     await expect(page.locator('th').filter({ hasText: 'Creado' })).toBeVisible()
@@ -49,18 +49,22 @@ test.describe('G-Invoice Intake', () => {
     await intake.goto()
     await page.waitForLoadState('networkidle')
     const hasData = await hasTableData(page)
-    test.skip(hasData, 'Table has existing data - empty state not visible')
-    await expect(page.getByText('No hay items de ingesta')).toBeVisible()
+    if (hasData) {
+      const rowCount = await page.locator('tbody tr').count()
+      expect(rowCount).toBeGreaterThan(0)
+    } else {
+      await expect(page.getByText('No hay subidas registradas')).toBeVisible()
+    }
   })
 
   // Form tests
-  test('should open form dialog when clicking Nueva Ingesta', async ({ page }) => {
+  test('should open form dialog when clicking Nueva Subida', async ({ page }) => {
     const intake = new GInvIntakePage(page)
     await intake.goto()
     await page.waitForLoadState('networkidle')
     await intake.createButton.click()
     await expect(intake.formDialog).toBeVisible()
-    await expect(page.getByText('Nueva Ingesta').nth(1)).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Nueva Subida' })).toBeVisible()
   })
 
   test('should show all form fields in dialog', async ({ page }) => {

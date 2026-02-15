@@ -77,7 +77,7 @@ test.describe('G-Invoice Auth & Access Control', () => {
     await page.waitForLoadState('networkidle')
     const sidebar = page.locator('aside[aria-label="Navegación G-Invoice"]')
     await expect(sidebar.getByText('Dashboard')).toBeVisible()
-    await expect(sidebar.getByText('Ingesta')).toBeVisible()
+    await expect(sidebar.getByText('Subidas')).toBeVisible()
     await expect(sidebar.getByText('UTTAI')).toBeVisible()
     await expect(sidebar.getByText('Contabilización')).toBeVisible()
     await expect(sidebar.getByText('Para facturar')).toBeVisible()
@@ -95,7 +95,7 @@ test.describe('G-Invoice Auth & Access Control', () => {
     const sidebar = page.locator('aside[aria-label="Navegación G-Invoice"]')
     // Should see basic items (no roles restriction)
     await expect(sidebar.getByText('Dashboard')).toBeVisible()
-    await expect(sidebar.getByText('Ingesta')).toBeVisible()
+    await expect(sidebar.getByText('Subidas')).toBeVisible()
     await expect(sidebar.getByText('UTTAI')).toBeVisible()
     // Should NOT see role-restricted items
     await expect(sidebar.getByText('Contabilización')).not.toBeVisible()

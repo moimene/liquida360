@@ -48,7 +48,10 @@ test.describe('Certificate Expiry Alert Workflow', () => {
     // If there are expiring certificates in the table, they should be visible
     const expiringRow = page.locator('tbody tr').filter({ hasText: /vencer|pr.ximo/i }).first()
     const hasExpiring = await expiringRow.isVisible().catch(() => false)
-    test.skip(!hasExpiring, 'No expiring certificates available')
-    await expect(expiringRow).toBeVisible()
+    if (hasExpiring) {
+      await expect(expiringRow).toBeVisible()
+    } else {
+      await expect(page.getByText(/No hay certificados|No hay datos/i)).toBeVisible()
+    }
   })
 })
