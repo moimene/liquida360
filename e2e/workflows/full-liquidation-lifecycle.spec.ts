@@ -9,7 +9,7 @@ test.describe('Full Liquidation Lifecycle', () => {
       await page.goto('/liquidations')
       const createButton = page.getByRole('button', { name: /Nueva liquidaci/i })
       const hasCreate = await createButton.isVisible().catch(() => false)
-      test.skip(!hasCreate, 'No create button available for this role')
+      expect(hasCreate).toBeTruthy()
       await createButton.click()
       await expect(page.getByRole('dialog')).toBeVisible()
 
@@ -17,7 +17,7 @@ test.describe('Full Liquidation Lifecycle', () => {
       const select = page.locator('#correspondent_id')
       const options = select.locator('option')
       const count = await options.count()
-      test.skip(count <= 1, 'No correspondents available')
+      expect(count).toBeGreaterThan(1)
       await select.selectOption({ index: 1 })
 
       // Navigate to next step
@@ -39,7 +39,7 @@ test.describe('Full Liquidation Lifecycle', () => {
       await waitForTableLoaded(page)
       const draftRow = page.locator('tbody tr').filter({ hasText: 'E2E Lifecycle Test' }).first()
       const hasDraft = await draftRow.isVisible().catch(() => false)
-      test.skip(!hasDraft, 'Draft liquidation not found')
+      expect(hasDraft).toBeTruthy()
       await draftRow.click()
       await page.getByRole('button', { name: /Enviar a aprob/i }).click()
       await waitForToast(page, /aprobaci/i)
@@ -52,7 +52,7 @@ test.describe('Full Liquidation Lifecycle', () => {
       await waitForTableLoaded(page)
       const pendingRow = page.locator('tbody tr').filter({ hasText: 'E2E Lifecycle Test' }).first()
       const hasPending = await pendingRow.isVisible().catch(() => false)
-      test.skip(!hasPending, 'Liquidation not found in pending state')
+      expect(hasPending).toBeTruthy()
       await pendingRow.click()
       await page.getByRole('button', { name: /Aprobar/i }).click()
       await waitForToast(page, /aprobada/i)
@@ -75,7 +75,7 @@ test.describe('Full Liquidation Lifecycle', () => {
       await waitForTableLoaded(page)
       const paymentRow = page.locator('tbody tr').first()
       const hasPayment = await paymentRow.isVisible().catch(() => false)
-      test.skip(!hasPayment, 'No payment request found')
+      expect(hasPayment).toBeTruthy()
       await paymentRow.click()
 
       // Start process if button is available

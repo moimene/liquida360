@@ -41,8 +41,12 @@ test.describe('Jobs / Clientes', () => {
     await jobs.goto()
     await page.waitForLoadState('networkidle')
     const hasData = await hasTableData(page)
-    test.skip(hasData, 'Table has existing data - empty state not visible')
-    await expect(page.getByText('No hay jobs registrados')).toBeVisible()
+    if (hasData) {
+      const rowCount = await page.locator('tbody tr').count()
+      expect(rowCount).toBeGreaterThan(0)
+    } else {
+      await expect(page.getByText('No hay jobs registrados')).toBeVisible()
+    }
   })
 
   test('should open form dialog when clicking Nuevo Job', async ({ page }) => {

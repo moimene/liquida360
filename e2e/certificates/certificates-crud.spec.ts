@@ -15,9 +15,15 @@ test.describe('Certificates CRUD', () => {
     await expect(certsPage.table).toBeVisible()
   })
 
-  test.skip('should display expiry panel', async () => {
-    // SKIPPED: There is no separate expiry panel on the certificates list page.
-    // Expiry info is shown on the dashboard in the "Certificados por vencer" section.
+  test('should show expiry information in list', async ({ page }) => {
+    const certsPage = new CertificatesPage(page)
+    await certsPage.goto()
+    await waitForTableLoaded(page)
+    // Expect the Vencimiento column and at least one date or badge to appear
+    const expiryHeader = page.getByRole('columnheader', { name: /Vencimiento/i })
+    await expect(expiryHeader).toBeVisible()
+    const expiryCell = page.locator('tbody td').filter({ hasText: /\d{2}\/\d{2}\/\d{4}|Vence|Vigente|Vencido/i }).first()
+    await expect(expiryCell).toBeVisible()
   })
 
   test('should open create certificate dialog', async ({ page }) => {

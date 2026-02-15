@@ -25,11 +25,14 @@ test.describe('Dashboard', () => {
     await dashboard.goto()
     await page.waitForLoadState('networkidle')
     // Wait for loading to finish - charts render only after loading=false and data exists
-    await page.waitForTimeout(2_000)
+    await page.waitForTimeout(3_000)
     const trendTitle = page.getByText('Tendencia de liquidaciones')
     const hasTrend = await trendTitle.isVisible().catch(() => false)
-    test.skip(!hasTrend, 'No liquidation data for trend chart')
-    await expect(trendTitle).toBeVisible()
+    if (hasTrend) {
+      await expect(trendTitle).toBeVisible()
+    } else {
+      await expect(page.getByText(/Sin datos|No hay datos/i)).toBeVisible()
+    }
   })
 
   test('should display liquidation status chart section', async ({ page }) => {
@@ -37,11 +40,14 @@ test.describe('Dashboard', () => {
     await dashboard.goto()
     await page.waitForLoadState('networkidle')
     // Wait for loading to finish
-    await page.waitForTimeout(2_000)
+    await page.waitForTimeout(3_000)
     const statusTitle = page.getByText('Distribución por estado')
     const hasStatus = await statusTitle.isVisible().catch(() => false)
-    test.skip(!hasStatus, 'No liquidation data for status chart')
-    await expect(statusTitle).toBeVisible()
+    if (hasStatus) {
+      await expect(statusTitle).toBeVisible()
+    } else {
+      await expect(page.getByText(/Sin datos|No hay datos/i)).toBeVisible()
+    }
   })
 
   test('should display certificate alerts section', async ({ page }) => {

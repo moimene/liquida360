@@ -22,7 +22,7 @@ Plataforma de gestion de liquidaciones de pagos para despachos de abogados. Gest
 | **Fechas** | date-fns |
 | **Iconos** | Lucide React |
 | **Tests unitarios** | Vitest + Testing Library |
-| **Tests E2E** | Playwright (26 specs, 146 tests) |
+| **Tests E2E** | Playwright (39 specs, 273 tests) |
 | **Lint/Format** | ESLint 9 + Prettier |
 
 ## Testing

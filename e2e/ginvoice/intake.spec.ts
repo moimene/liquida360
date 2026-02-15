@@ -49,8 +49,12 @@ test.describe('G-Invoice Intake', () => {
     await intake.goto()
     await page.waitForLoadState('networkidle')
     const hasData = await hasTableData(page)
-    test.skip(hasData, 'Table has existing data - empty state not visible')
-    await expect(page.getByText('No hay subidas registradas')).toBeVisible()
+    if (hasData) {
+      const rowCount = await page.locator('tbody tr').count()
+      expect(rowCount).toBeGreaterThan(0)
+    } else {
+      await expect(page.getByText('No hay subidas registradas')).toBeVisible()
+    }
   })
 
   // Form tests
